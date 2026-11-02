@@ -358,11 +358,12 @@ impl Render for TitleBar {
                     | client::Status::Authenticated
                     | client::Status::Connecting
             );
-        let is_signed_out_or_auth_error = user.is_none()
-            && matches!(
-                status,
-                client::Status::SignedOut | client::Status::AuthenticationError
-            );
+        // clean-cn: 隐藏登录按钮（依赖 zed 账号），纯净版不显示
+        // let is_signed_out_or_auth_error = user.is_none()
+        //     && matches!(
+        //         status,
+        //         client::Status::SignedOut | client::Status::AuthenticationError
+        //     );
 
         children.push(
             h_flex()
@@ -372,12 +373,13 @@ impl Render for TitleBar {
                 .child(self.render_call_controls(window, cx))
                 .children(self.render_connection_status(status, cx))
                 .child(self.update_version.clone())
-                .when(
-                    user.is_none()
-                        && is_signed_out_or_auth_error
-                        && TitleBarSettings::get_global(cx).show_sign_in,
-                    |this| this.child(self.render_sign_in_button(cx)),
-                )
+                // clean-cn: 隐藏登录按钮（依赖 zed 账号），纯净版不显示
+                // .when(
+                //     user.is_none()
+                //         && is_signed_out_or_auth_error
+                //         && TitleBarSettings::get_global(cx).show_sign_in,
+                //     |this| this.child(self.render_sign_in_button(cx)),
+                // )
                 .when(is_signing_in, |this| {
                     this.child(
                         Label::new(t!("title_bar.status.signing_in"))

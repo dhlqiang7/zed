@@ -9,6 +9,8 @@ pub struct TitleBarSettings {
     pub show_branch_name: bool,
     pub show_worktree_name: bool,
     pub show_project_items: bool,
+    // clean-cn: 登录按钮已隐藏，此设置字段暂无读取方；保留定义以便同步上游
+    #[allow(dead_code)]
     pub show_sign_in: bool,
     pub show_user_menu: bool,
     pub show_menus: bool,
