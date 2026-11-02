@@ -368,11 +368,17 @@ impl Telemetry {
         state.os_name = os_name();
     }
 
+    // clean-cn: 遥测硬关闭。getter 首行短路返回，原实现保留在其后（不可达），
+    // 以便同步上游时冲突最小；allow 压制由此产生的 unreachable 警告。
+    #[allow(unreachable_code)]
     pub fn metrics_enabled(self: &Arc<Self>) -> bool {
+        return false; // clean-cn: 遥测硬关闭
         self.state.lock().settings.metrics
     }
 
+    #[allow(unreachable_code)]
     pub fn diagnostics_enabled(self: &Arc<Self>) -> bool {
+        return false; // clean-cn: 崩溃上报硬关闭
         self.state.lock().settings.diagnostics
     }
 
@@ -563,10 +569,14 @@ impl Telemetry {
             .collect()
     }
 
+    // clean-cn: 事件入口短路。事件不入队、flush 定时器不启动，原实现保留在其后
+    // （不可达）以便同步上游时冲突最小；allow 压制由此产生的编译警告。
+    #[allow(unreachable_code, unused_mut, unused_variables)]
     fn report_event(self: &Arc<Self>, mut event: Event) {
         let mut state = self.state.lock();
         // RUST_LOG=telemetry=trace to debug telemetry events
         log::trace!(target: "telemetry", "{:?}", event);
+        return; // clean-cn: 事件入口短路，事件不入队，flush 定时器不启动
 
         if !state.settings.metrics {
             return;
@@ -618,11 +628,16 @@ impl Telemetry {
         }
     }
 
+    // clean-cn: 不向任何请求提供持久标识，原实现保留在其后（不可达）。
+    #[allow(unreachable_code)]
     pub fn metrics_id(self: &Arc<Self>) -> Option<Arc<str>> {
+        return None; // clean-cn: 不向任何请求提供持久标识
         self.state.lock().metrics_id.clone()
     }
 
+    #[allow(unreachable_code)]
     pub fn system_id(self: &Arc<Self>) -> Option<Arc<str>> {
+        return None; // clean-cn: 同上
         self.state.lock().system_id.clone()
     }
 
@@ -657,7 +672,10 @@ impl Telemetry {
             .body(json_bytes.into())?)
     }
 
+    // clean-cn: 事件批量上传出口短路，原实现保留在其后（不可达）。
+    #[allow(unreachable_code)]
     pub async fn flush_events_inner(self: &Arc<Self>) -> Result<()> {
+        return Ok(()); // clean-cn: 事件批量上传出口短路
         let (json_bytes, request_body) = {
             let mut state = self.state.lock();
             state.first_event_date_time = None;
