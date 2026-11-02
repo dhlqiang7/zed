@@ -1737,7 +1737,8 @@
   "disable_ai": false,
   // Automatically update Zed. This setting may be ignored on Linux if
   // installed through a package manager.
-  "auto_update": true,
+  // clean-cn: 纯净版默认禁用自动更新（更新源产物会覆盖纯净版改动），手动升级
+  "auto_update": false,
   // How to render LSP `textDocument/documentColor` colors in the editor.
   //
   // Possible values:
