@@ -665,9 +665,10 @@ pub struct TelemetrySettingsContent {
 
 impl Default for TelemetrySettingsContent {
     fn default() -> Self {
+        // clean-cn: 纯净版默认关闭遥测，行为变更有意
         Self {
-            diagnostics: Some(true),
-            metrics: Some(true),
+            diagnostics: Some(false),
+            metrics: Some(false),
             anthropic_retention: Some(false),
         }
     }
