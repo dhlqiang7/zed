@@ -77,7 +77,14 @@ impl AnthropicEventReporter {
         }
     }
 
+    // clean-cn: Anthropic 使用统计直连上报（api.anthropic.com/v1/log/zed）不受
+    // 官方 telemetry 开关约束，仅判断 is_anthropic + api_key，纯净版在此硬关。
+    // 原函数体保留于 return 之后（不可达），便于同步上游时最小化冲突。
+    // event 参数在 return 之后的不可达原体中才被使用，rustc 仍报 unused，
+    // 故一并压掉，保持原函数体零改动。
+    #[allow(unreachable_code, unused_variables)]
     pub fn report(&self, event: AnthropicEventData) {
+        return;
         if !self.is_anthropic {
             return;
         }
