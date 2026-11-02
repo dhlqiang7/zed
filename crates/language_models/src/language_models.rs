@@ -17,7 +17,8 @@ pub use crate::extension::init_proxy as init_extension_proxy;
 use crate::provider::anthropic::AnthropicLanguageModelProvider;
 use crate::provider::anthropic_compatible::AnthropicCompatibleLanguageModelProvider;
 use crate::provider::bedrock::BedrockLanguageModelProvider;
-use crate::provider::cloud::CloudLanguageModelProvider;
+// clean-cn: 云 provider 注册已移除，见 register_language_model_providers
+// use crate::provider::cloud::CloudLanguageModelProvider;
 use crate::provider::copilot_chat::CopilotChatLanguageModelProvider;
 use crate::provider::google::GoogleLanguageModelProvider;
 use crate::provider::llama_cpp::LlamaCppLanguageModelProvider;
@@ -27,11 +28,13 @@ use crate::provider::ollama::OllamaLanguageModelProvider;
 use crate::provider::open_ai::OpenAiLanguageModelProvider;
 use crate::provider::open_ai_compatible::OpenAiCompatibleLanguageModelProvider;
 use crate::provider::open_router::OpenRouterLanguageModelProvider;
-use crate::provider::openai_subscribed::OpenAiSubscribedProvider;
+// clean-cn: 订阅型 provider 注册已移除，见 register_language_model_providers
+// use crate::provider::openai_subscribed::OpenAiSubscribedProvider;
 use crate::provider::opencode::OpenCodeLanguageModelProvider;
 use crate::provider::vercel_ai_gateway::VercelAiGatewayLanguageModelProvider;
 use crate::provider::x_ai::XAiLanguageModelProvider;
-use crate::provider::x_ai_subscribed::XAiSubscribedProvider;
+// clean-cn: 订阅型 provider 注册已移除，见 register_language_model_providers
+// use crate::provider::x_ai_subscribed::XAiSubscribedProvider;
 pub use crate::settings::*;
 
 pub fn init(user_store: Entity<UserStore>, client: Arc<Client>, cx: &mut App) {
@@ -225,6 +228,8 @@ fn register_compatible_providers(
     }
 }
 
+// clean-cn: user_store 仅被已移除的云 provider 使用，注册移除后不再引用
+#[allow(unused_variables)]
 fn register_language_model_providers(
     registry: &mut LanguageModelRegistry,
     user_store: Entity<UserStore>,
@@ -232,14 +237,15 @@ fn register_language_model_providers(
     credentials_provider: Arc<dyn CredentialsProvider>,
     cx: &mut Context<LanguageModelRegistry>,
 ) {
-    registry.register_provider(
-        Arc::new(CloudLanguageModelProvider::new(
-            user_store,
-            client.clone(),
-            cx,
-        )),
-        cx,
-    );
+    // clean-cn: 移除 zed 云 provider 注册（走 llm.zed.dev + zed 账号计费），保留全部 BYOK/本地 provider
+    // registry.register_provider(
+    //     Arc::new(CloudLanguageModelProvider::new(
+    //         user_store,
+    //         client.clone(),
+    //         cx,
+    //     )),
+    //     cx,
+    // );
     registry.register_provider(
         Arc::new(AnthropicLanguageModelProvider::new(
             client.http_client(),
@@ -336,14 +342,15 @@ fn register_language_model_providers(
         )),
         cx,
     );
-    registry.register_provider(
-        Arc::new(XAiSubscribedProvider::new(
-            client.http_client(),
-            credentials_provider.clone(),
-            cx,
-        )),
-        cx,
-    );
+    // clean-cn: 移除 x_ai_subscribed 订阅型 provider（经 zed 账号中继），BYOK 的 x_ai 保留
+    // registry.register_provider(
+    //     Arc::new(XAiSubscribedProvider::new(
+    //         client.http_client(),
+    //         credentials_provider.clone(),
+    //         cx,
+    //     )),
+    //     cx,
+    // );
     registry.register_provider(
         Arc::new(OpenCodeLanguageModelProvider::new(
             client.http_client(),
@@ -353,14 +360,15 @@ fn register_language_model_providers(
         cx,
     );
     registry.register_provider(Arc::new(CopilotChatLanguageModelProvider::new(cx)), cx);
-    registry.register_provider(
-        Arc::new(OpenAiSubscribedProvider::new(
-            client.http_client(),
-            credentials_provider,
-            cx,
-        )),
-        cx,
-    );
+    // clean-cn: 移除 openai_subscribed 订阅型 provider（经 zed 账号中继），BYOK 的 open_ai 保留
+    // registry.register_provider(
+    //     Arc::new(OpenAiSubscribedProvider::new(
+    //         client.http_client(),
+    //         credentials_provider,
+    //         cx,
+    //     )),
+    //     cx,
+    // );
 }
 
 #[cfg(test)]
