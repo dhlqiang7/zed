@@ -1,3 +1,5 @@
+// clean-cn: 协作子模块 init 已注释，私有模块需 allow 防止 dead_code 告警
+#[allow(dead_code)]
 mod call_stats_modal;
 pub mod channel_view;
 pub mod collab_panel;
@@ -17,11 +19,13 @@ use ui::px;
 use workspace::AppState;
 
 // Another comment, nice.
-pub fn init(app_state: &Arc<AppState>, cx: &mut App) {
-    call_stats_modal::init(cx);
-    channel_view::init(cx);
-    collab_panel::init(cx);
-    notifications::init(app_state, cx);
+pub fn init(_app_state: &Arc<AppState>, cx: &mut App) {
+    // clean-cn: 协作功能（通话统计/频道/协作面板/通知）依赖 zed.dev 账号，注册移除；
+    // title_bar::init 是全局标题栏组件初始化，与协作无关，必须保留
+    // call_stats_modal::init(cx);
+    // channel_view::init(cx);
+    // collab_panel::init(cx);
+    // notifications::init(app_state, cx);
     title_bar::init(cx);
 }
 

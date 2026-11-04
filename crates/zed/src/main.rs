@@ -690,20 +690,21 @@ fn main() {
             cx.background_executor().clone(),
         );
         command_palette::init(cx);
-        let copilot_chat_configuration = copilot_chat::CopilotChatConfiguration {
-            enterprise_uri: settings::CopilotSettings::get_global(cx)
-                .enterprise_uri
-                .clone(),
-        };
-        let credentials_provider = zed_credentials_provider::global(cx);
-        copilot_chat::init(
-            app_state.client.http_client(),
-            credentials_provider,
-            copilot_chat_configuration,
-            cx,
-        );
+        // clean-cn: Copilot（GitHub 外站）聊天/补全注册移除
+        // let copilot_chat_configuration = copilot_chat::CopilotChatConfiguration {
+        //     enterprise_uri: settings::CopilotSettings::get_global(cx)
+        //         .enterprise_uri
+        //         .clone(),
+        // };
+        // let credentials_provider = zed_credentials_provider::global(cx);
+        // copilot_chat::init(
+        //     app_state.client.http_client(),
+        //     credentials_provider,
+        //     copilot_chat_configuration,
+        //     cx,
+        // );
 
-        copilot_ui::init(&app_state, cx);
+        // copilot_ui::init(&app_state, cx);
         language_model::init(cx);
         RefreshLlmTokenListener::register(
             app_state.client.clone(),
@@ -762,7 +763,8 @@ fn main() {
         outline_panel::init(cx);
         tasks_ui::init(cx);
         snippets_ui::init(cx);
-        channel::init(&app_state.client.clone(), app_state.user_store.clone(), cx);
+        // clean-cn: zed.dev 频道（chat）注册移除
+        // channel::init(&app_state.client.clone(), app_state.user_store.clone(), cx);
         search::init(cx);
         lsp_locations::init(cx);
         cx.set_global(workspace::PaneSearchBarCallbacks {
@@ -785,8 +787,11 @@ fn main() {
         theme_selector::init(cx);
         settings_profile_selector::init(cx);
         language_tools::init(cx);
+        // clean-cn: 协作 UI（面板/频道/通知）注册移除；call::init 必须保留——
+        // title_bar 组件依赖其初始化的 ActiveCall 全局（TitleBar::new 会 unwrap），
+        // 无 zed 账号时不会产生任何网络请求
         call::init(app_state.client.clone(), app_state.user_store.clone(), cx);
-        notifications::init(app_state.client.clone(), app_state.user_store.clone(), cx);
+        // notifications::init(app_state.client.clone(), app_state.user_store.clone(), cx);
         collab_ui::init(&app_state, cx);
         git_ui::init(cx);
         feedback::init(cx);
