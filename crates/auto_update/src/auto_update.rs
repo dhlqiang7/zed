@@ -514,7 +514,7 @@ impl AutoUpdater {
 
     // clean-cn: 禁用自动更新。更新源（第三方 GitHub Releases）产物会覆盖纯净版改动，
     // 且无签名校验；纯净版一律手动升级。原实现保留在不可达区以便同步上游。
-    #[allow(unreachable_code)]
+    #[allow(unreachable_code, unused_variables)]
     pub fn poll(&mut self, check_type: UpdateCheckType, cx: &mut Context<Self>) {
         return; // clean-cn: 更新检查入口短路
         if check_type.is_manual() {
