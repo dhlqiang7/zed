@@ -6,7 +6,8 @@ use collections::{HashMap, HashSet};
 use credentials_provider::CredentialsProvider;
 use gpui::{App, Context, Entity};
 use language_model::{LanguageModelProviderId, LanguageModelRegistry};
-use provider::deepseek::DeepSeekLanguageModelProvider;
+// clean-cn: 云端 provider 注册已移除，见 register_language_model_providers
+// use provider::deepseek::DeepSeekLanguageModelProvider;
 
 pub mod extension;
 pub mod provider;
@@ -14,25 +15,35 @@ mod settings;
 
 pub use crate::extension::init_proxy as init_extension_proxy;
 
-use crate::provider::anthropic::AnthropicLanguageModelProvider;
+// clean-cn: 云端 provider 注册已移除，见 register_language_model_providers
+// use crate::provider::anthropic::AnthropicLanguageModelProvider;
 use crate::provider::anthropic_compatible::AnthropicCompatibleLanguageModelProvider;
-use crate::provider::bedrock::BedrockLanguageModelProvider;
+// clean-cn: 云端 provider 注册已移除，见 register_language_model_providers
+// use crate::provider::bedrock::BedrockLanguageModelProvider;
 // clean-cn: 云 provider 注册已移除，见 register_language_model_providers
 // use crate::provider::cloud::CloudLanguageModelProvider;
-use crate::provider::copilot_chat::CopilotChatLanguageModelProvider;
-use crate::provider::google::GoogleLanguageModelProvider;
+// clean-cn: 云端 provider 注册已移除，见 register_language_model_providers
+// use crate::provider::copilot_chat::CopilotChatLanguageModelProvider;
+// clean-cn: 云端 provider 注册已移除，见 register_language_model_providers
+// use crate::provider::google::GoogleLanguageModelProvider;
 use crate::provider::llama_cpp::LlamaCppLanguageModelProvider;
 use crate::provider::lmstudio::LmStudioLanguageModelProvider;
-pub use crate::provider::mistral::MistralLanguageModelProvider;
+// clean-cn: 云端 provider 注册已移除，见 register_language_model_providers
+// pub use crate::provider::mistral::MistralLanguageModelProvider;
 use crate::provider::ollama::OllamaLanguageModelProvider;
-use crate::provider::open_ai::OpenAiLanguageModelProvider;
+// clean-cn: 云端 provider 注册已移除，见 register_language_model_providers
+// use crate::provider::open_ai::OpenAiLanguageModelProvider;
 use crate::provider::open_ai_compatible::OpenAiCompatibleLanguageModelProvider;
-use crate::provider::open_router::OpenRouterLanguageModelProvider;
+// clean-cn: 云端 provider 注册已移除，见 register_language_model_providers
+// use crate::provider::open_router::OpenRouterLanguageModelProvider;
 // clean-cn: 订阅型 provider 注册已移除，见 register_language_model_providers
 // use crate::provider::openai_subscribed::OpenAiSubscribedProvider;
-use crate::provider::opencode::OpenCodeLanguageModelProvider;
-use crate::provider::vercel_ai_gateway::VercelAiGatewayLanguageModelProvider;
-use crate::provider::x_ai::XAiLanguageModelProvider;
+// clean-cn: 云端 provider 注册已移除，见 register_language_model_providers
+// use crate::provider::opencode::OpenCodeLanguageModelProvider;
+// clean-cn: 云端 provider 注册已移除，见 register_language_model_providers
+// use crate::provider::vercel_ai_gateway::VercelAiGatewayLanguageModelProvider;
+// clean-cn: 云端 provider 注册已移除，见 register_language_model_providers
+// use crate::provider::x_ai::XAiLanguageModelProvider;
 // clean-cn: 订阅型 provider 注册已移除，见 register_language_model_providers
 // use crate::provider::x_ai_subscribed::XAiSubscribedProvider;
 pub use crate::settings::*;
@@ -246,22 +257,24 @@ fn register_language_model_providers(
     //     )),
     //     cx,
     // );
-    registry.register_provider(
-        Arc::new(AnthropicLanguageModelProvider::new(
-            client.http_client(),
-            credentials_provider.clone(),
-            cx,
-        )),
-        cx,
-    );
-    registry.register_provider(
-        Arc::new(OpenAiLanguageModelProvider::new(
-            client.http_client(),
-            credentials_provider.clone(),
-            cx,
-        )),
-        cx,
-    );
+    // clean-cn: 云端 provider（api.anthropic.com）注册移除，仅保留自定义/本地入口
+    // registry.register_provider(
+    //     Arc::new(AnthropicLanguageModelProvider::new(
+    //         client.http_client(),
+    //         credentials_provider.clone(),
+    //         cx,
+    //     )),
+    //     cx,
+    // );
+    // clean-cn: 云端 provider（api.openai.com）注册移除
+    // registry.register_provider(
+    //     Arc::new(OpenAiLanguageModelProvider::new(
+    //         client.http_client(),
+    //         credentials_provider.clone(),
+    //         cx,
+    //     )),
+    //     cx,
+    // );
     registry.register_provider(
         Arc::new(OllamaLanguageModelProvider::new(
             client.http_client(),
@@ -286,62 +299,64 @@ fn register_language_model_providers(
         )),
         cx,
     );
-    registry.register_provider(
-        Arc::new(DeepSeekLanguageModelProvider::new(
-            client.http_client(),
-            credentials_provider.clone(),
-            cx,
-        )),
-        cx,
-    );
-    registry.register_provider(
-        Arc::new(GoogleLanguageModelProvider::new(
-            client.http_client(),
-            credentials_provider.clone(),
-            cx,
-        )),
-        cx,
-    );
-    registry.register_provider(
-        MistralLanguageModelProvider::global(
-            client.http_client(),
-            credentials_provider.clone(),
-            cx,
-        ),
-        cx,
-    );
-    registry.register_provider(
-        Arc::new(BedrockLanguageModelProvider::new(
-            client.http_client(),
-            credentials_provider.clone(),
-            cx,
-        )),
-        cx,
-    );
-    registry.register_provider(
-        Arc::new(OpenRouterLanguageModelProvider::new(
-            client.http_client(),
-            credentials_provider.clone(),
-            cx,
-        )),
-        cx,
-    );
-    registry.register_provider(
-        Arc::new(VercelAiGatewayLanguageModelProvider::new(
-            client.http_client(),
-            credentials_provider.clone(),
-            cx,
-        )),
-        cx,
-    );
-    registry.register_provider(
-        Arc::new(XAiLanguageModelProvider::new(
-            client.http_client(),
-            credentials_provider.clone(),
-            cx,
-        )),
-        cx,
-    );
+    // clean-cn: 云端 provider 注册移除（deepseek/google/mistral/bedrock/openrouter/vercel/xai），
+    // 防止误操作把代码发往外部服务；自定义端点见 open_ai_compatible/anthropic_compatible
+    // registry.register_provider(
+    //     Arc::new(DeepSeekLanguageModelProvider::new(
+    //         client.http_client(),
+    //         credentials_provider.clone(),
+    //         cx,
+    //     )),
+    //     cx,
+    // );
+    // registry.register_provider(
+    //     Arc::new(GoogleLanguageModelProvider::new(
+    //         client.http_client(),
+    //         credentials_provider.clone(),
+    //         cx,
+    //     )),
+    //     cx,
+    // );
+    // registry.register_provider(
+    //     MistralLanguageModelProvider::global(
+    //         client.http_client(),
+    //         credentials_provider.clone(),
+    //         cx,
+    //     ),
+    //     cx,
+    // );
+    // registry.register_provider(
+    //     Arc::new(BedrockLanguageModelProvider::new(
+    //         client.http_client(),
+    //         credentials_provider.clone(),
+    //         cx,
+    //     )),
+    //     cx,
+    // );
+    // registry.register_provider(
+    //     Arc::new(OpenRouterLanguageModelProvider::new(
+    //         client.http_client(),
+    //         credentials_provider.clone(),
+    //         cx,
+    //     )),
+    //     cx,
+    // );
+    // registry.register_provider(
+    //     Arc::new(VercelAiGatewayLanguageModelProvider::new(
+    //         client.http_client(),
+    //         credentials_provider.clone(),
+    //         cx,
+    //     )),
+    //     cx,
+    // );
+    // registry.register_provider(
+    //     Arc::new(XAiLanguageModelProvider::new(
+    //         client.http_client(),
+    //         credentials_provider.clone(),
+    //         cx,
+    //     )),
+    //     cx,
+    // );
     // clean-cn: 移除 x_ai_subscribed 订阅型 provider（经 zed 账号中继），BYOK 的 x_ai 保留
     // registry.register_provider(
     //     Arc::new(XAiSubscribedProvider::new(
@@ -351,15 +366,16 @@ fn register_language_model_providers(
     //     )),
     //     cx,
     // );
-    registry.register_provider(
-        Arc::new(OpenCodeLanguageModelProvider::new(
-            client.http_client(),
-            credentials_provider.clone(),
-            cx,
-        )),
-        cx,
-    );
-    registry.register_provider(Arc::new(CopilotChatLanguageModelProvider::new(cx)), cx);
+    // clean-cn: 云端 provider 注册移除（opencode/copilot_chat）
+    // registry.register_provider(
+    //     Arc::new(OpenCodeLanguageModelProvider::new(
+    //         client.http_client(),
+    //         credentials_provider.clone(),
+    //         cx,
+    //     )),
+    //     cx,
+    // );
+    // registry.register_provider(Arc::new(CopilotChatLanguageModelProvider::new(cx)), cx);
     // clean-cn: 移除 openai_subscribed 订阅型 provider（经 zed 账号中继），BYOK 的 open_ai 保留
     // registry.register_provider(
     //     Arc::new(OpenAiSubscribedProvider::new(
