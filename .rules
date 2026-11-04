@@ -203,3 +203,12 @@ Rules emerge from validated patterns, not one-off observations. The workflow is:
 1. Agent notes a pattern during a session.
 2. Team validates the pattern in code review.
 3. A dedicated commit adds the rule with context on *why* it exists.
+
+# Fork 维护规则（clean-cn：构建资源限制）
+
+本机内存 14G、磁盘 197G。Zed workspace 编译（含 webrtc-sys 链接）资源峰值高，以下规则来自实际事故，违反会导致整机重启或磁盘占满：
+
+* 所有 cargo 命令（build/clippy/test）必须单并发：加 `-j 1`。多 crate 并行编译的 rustc 内存叠加会触发内核 OOM，已两次导致整机重启、构建进度全部丢失。
+* 同一时间只允许一个 cargo 进程：构建期间禁止并行运行其它 cargo 命令（包括验证 agent 跑测试/clippy）。
+* release 构建必须后台运行并重定向到日志文件（`> /tmp/buildN.log 2>&1`），完成后用日志文件判断真实退出码；禁止管道传输（会掩码退出码）。
+* 磁盘管理：阶段性验证完成后及时删除 `target/debug`（下次跑测试重建即可）与 /tmp 临时产物（`/tmp/zed-verify-*`、`/tmp/*.pcap`、`/tmp/*.log`）。dev+release 双产物叠加曾达 115G。
