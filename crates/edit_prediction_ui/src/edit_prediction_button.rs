@@ -1601,18 +1601,20 @@ pub fn set_completion_provider(fs: Arc<dyn Fs>, cx: &mut App, provider: EditPred
 pub fn get_available_providers(cx: &mut App) -> Vec<EditPredictionProvider> {
     let mut providers = Vec::new();
 
-    providers.push(EditPredictionProvider::Zed);
+    // clean-cn: 云端编辑预测（Zed/Copilot/Codestral）不进入可选列表，
+    // 仅保留 Ollama 与 OpenAI Compatible API 自定义端点
+    // providers.push(EditPredictionProvider::Zed);
 
-    let app_state = workspace::AppState::global(cx);
-    if copilot::GlobalCopilotAuth::try_get_or_init(app_state, cx)
-        .is_some_and(|copilot| copilot.0.read(cx).is_authenticated())
-    {
-        providers.push(EditPredictionProvider::Copilot);
-    };
+    // let app_state = workspace::AppState::global(cx);
+    // if copilot::GlobalCopilotAuth::try_get_or_init(app_state, cx)
+    //     .is_some_and(|copilot| copilot.0.read(cx).is_authenticated())
+    // {
+    //     providers.push(EditPredictionProvider::Copilot);
+    // };
 
-    if codestral::codestral_api_key(cx).is_some() {
-        providers.push(EditPredictionProvider::Codestral);
-    }
+    // if codestral::codestral_api_key(cx).is_some() {
+    //     providers.push(EditPredictionProvider::Codestral);
+    // }
 
     if all_language_settings(None, cx)
         .edit_predictions
@@ -1630,12 +1632,14 @@ pub fn get_available_providers(cx: &mut App) -> Vec<EditPredictionProvider> {
         providers.push(EditPredictionProvider::OpenAiCompatibleApi);
     }
 
-    if edit_prediction::mercury::mercury_api_token(cx)
-        .read(cx)
-        .has_key()
-    {
-        providers.push(EditPredictionProvider::Mercury);
-    }
+    // clean-cn: Mercury 云端编辑预测路由已短路，入口同步移除，
+    // 防止 keychain 残留 token 时下拉出现选中无效的死选项
+    // if edit_prediction::mercury::mercury_api_token(cx)
+    //     .read(cx)
+    //     .has_key()
+    // {
+    //     providers.push(EditPredictionProvider::Mercury);
+    // }
 
     providers
 }
@@ -1790,10 +1794,12 @@ fn emit_edit_prediction_menu_opened(
 }
 
 fn load_provider_credentials(cx: &mut App) {
-    let _mercury_task = edit_prediction::mercury::load_mercury_api_token(cx);
+    // clean-cn: Mercury/Codestral 云端凭据不再加载——路由已短路，
+    // 避免按钮创建/设置变更时对 keychain 的无用读取
+    // let _mercury_task = edit_prediction::mercury::load_mercury_api_token(cx);
     let _open_ai_compatible_task =
         edit_prediction::open_ai_compatible::load_open_ai_compatible_api_token(cx);
-    let _codestral_task = codestral::load_codestral_api_key(cx);
+    // let _codestral_task = codestral::load_codestral_api_key(cx);
 }
 
 fn copilot_settings_url(enterprise_uri: Option<&str>) -> Arc<str> {
@@ -1838,15 +1844,23 @@ mod tests {
                 name: SharedString::from("TEST_API_KEY"),
                 value: None,
             };
-            for key_state in [
-                edit_prediction::mercury::mercury_api_token(cx),
-                edit_prediction::open_ai_compatible::open_ai_compatible_api_token(cx),
-                codestral::codestral_api_key_state(cx),
-            ] {
-                key_state.update(cx, |state, _| {
+            // clean-cn: Mercury/Codestral 云端凭据加载已移除，原上游循环注释保留，
+            // 仅剩自定义端点一项时 clippy 拒绝单元素 for，改为直接调用
+            // for key_state in [
+            //     edit_prediction::mercury::mercury_api_token(cx),
+            //     edit_prediction::open_ai_compatible::open_ai_compatible_api_token(cx),
+            //     codestral::codestral_api_key_state(cx),
+            // ] {
+            //     key_state.update(cx, |state, _| {
+            //         *state = ApiKeyState::new(state.url.clone(), env_var.clone());
+            //     });
+            // }
+            edit_prediction::open_ai_compatible::open_ai_compatible_api_token(cx).update(
+                cx,
+                |state, _| {
                     *state = ApiKeyState::new(state.url.clone(), env_var.clone());
-                });
-            }
+                },
+            );
         });
         let new_button = |cx: &mut TestAppContext| {
             cx.new(|cx| {
@@ -1873,12 +1887,16 @@ mod tests {
         });
         cx.run_until_parked();
         assert_eq!(
+            // clean-cn: 云端凭据（Mercury/Codestral）不再加载，仅剩自定义端点的读取，
+            // 原上游断言数组注释保留便于同步
+            // credentials.take_reads(),
+            // [
+            //     "https://api.inceptionlabs.ai/v1/edit/completions",
+            //     "https://codestral.mistral.ai",
+            //     "https://edit.example",
+            // ]
             credentials.take_reads(),
-            [
-                "https://api.inceptionlabs.ai/v1/edit/completions",
-                "https://codestral.mistral.ai",
-                "https://edit.example",
-            ]
+            ["https://edit.example"]
         );
         drop(button);
         let _button = new_button(cx);

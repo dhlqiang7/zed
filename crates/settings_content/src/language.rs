@@ -91,8 +91,9 @@ impl merge_from::MergeFrom for AllLanguageSettingsContent {
 )]
 #[serde(rename_all = "snake_case")]
 pub enum EditPredictionProvider {
-    None,
+    // clean-cn: 默认值由 Copilot 改为 None，编辑预测需显式配置自定义端点启用
     #[default]
+    None,
     Copilot,
     Zed,
     Codestral,

@@ -1,7 +1,9 @@
-use codestral::{CODESTRAL_API_URL, codestral_api_key_state, codestral_api_url};
+// clean-cn: 云端编辑预测表单已移除，相关导入停用
+// use codestral::{CODESTRAL_API_URL, codestral_api_key_state, codestral_api_url};
+use codestral::CODESTRAL_API_URL;
 use edit_prediction::{
     ApiKeyState,
-    mercury::{MERCURY_CREDENTIALS_URL, mercury_api_token},
+    // mercury::{MERCURY_CREDENTIALS_URL, mercury_api_token},
     open_ai_compatible::{open_ai_compatible_api_token, open_ai_compatible_api_url},
 };
 use edit_prediction_ui::{get_available_providers, set_completion_provider};
@@ -32,57 +34,59 @@ pub(crate) fn render_edit_prediction_setup_page(
 ) -> AnyElement {
     let providers = [
         Some(render_provider_dropdown(window, cx)),
-        Some(render_zed_provider(settings_window, window, cx).into_any_element()),
-        render_github_copilot_provider(settings_window, window, cx)
-            .map(IntoElement::into_any_element),
-        Some(
-            render_api_key_provider(
-                IconName::Inception,
-                "Mercury",
-                ApiKeyDocs::Link {
-                    dashboard_url: "https://platform.inceptionlabs.ai/dashboard/api-keys".into(),
-                },
-                mercury_api_token(cx),
-                |_cx| MERCURY_CREDENTIALS_URL,
-                Some(
-                    settings_window
-                        .render_sub_page_items_section(
-                            mercury_settings().iter().enumerate(),
-                            true,
-                            window,
-                            cx,
-                        )
-                        .into_any_element(),
-                ),
-                window,
-                cx,
-            )
-            .into_any_element(),
-        ),
-        Some(
-            render_api_key_provider(
-                IconName::AiMistral,
-                "Codestral",
-                ApiKeyDocs::Link {
-                    dashboard_url: "https://console.mistral.ai/codestral".into(),
-                },
-                codestral_api_key_state(cx),
-                |cx| codestral_api_url(cx),
-                Some(
-                    settings_window
-                        .render_sub_page_items_section(
-                            codestral_settings().iter().enumerate(),
-                            true,
-                            window,
-                            cx,
-                        )
-                        .into_any_element(),
-                ),
-                window,
-                cx,
-            )
-            .into_any_element(),
-        ),
+        // clean-cn: 云端编辑预测（Zed/Copilot/Mercury/Codestral）设置表单移除，
+        // 仅保留 Ollama 与 OpenAI Compatible API 自定义端点
+        // Some(render_zed_provider(settings_window, window, cx).into_any_element()),
+        // render_github_copilot_provider(settings_window, window, cx)
+        //     .map(IntoElement::into_any_element),
+        // Some(
+        //     render_api_key_provider(
+        //         IconName::Inception,
+        //         "Mercury",
+        //         ApiKeyDocs::Link {
+        //             dashboard_url: "https://platform.inceptionlabs.ai/dashboard/api-keys".into(),
+        //         },
+        //         mercury_api_token(cx),
+        //         |_cx| MERCURY_CREDENTIALS_URL,
+        //         Some(
+        //             settings_window
+        //                 .render_sub_page_items_section(
+        //                     mercury_settings().iter().enumerate(),
+        //                     true,
+        //                     window,
+        //                     cx,
+        //                 )
+        //                 .into_any_element(),
+        //         ),
+        //         window,
+        //         cx,
+        //     )
+        //     .into_any_element(),
+        // ),
+        // Some(
+        //     render_api_key_provider(
+        //         IconName::AiMistral,
+        //         "Codestral",
+        //         ApiKeyDocs::Link {
+        //             dashboard_url: "https://console.mistral.ai/codestral".into(),
+        //         },
+        //         codestral_api_key_state(cx),
+        //         |cx| codestral_api_url(cx),
+        //         Some(
+        //             settings_window
+        //                 .render_sub_page_items_section(
+        //                     codestral_settings().iter().enumerate(),
+        //                     true,
+        //                     window,
+        //                     cx,
+        //                 )
+        //                 .into_any_element(),
+        //         ),
+        //         window,
+        //         cx,
+        //     )
+        //     .into_any_element(),
+        // ),
         Some(render_ollama_provider(settings_window, window, cx).into_any_element()),
         Some(
             render_api_key_provider(
@@ -200,6 +204,8 @@ fn render_provider_dropdown(window: &mut Window, cx: &mut App) -> AnyElement {
 }
 
 enum ApiKeyDocs {
+    // clean-cn: 云端编辑预测已禁用，Link 变体不再构造
+    #[allow(dead_code)]
     Link { dashboard_url: SharedString },
     Custom { message: SharedString },
 }
@@ -735,6 +741,7 @@ fn open_ai_compatible_settings() -> Box<[SettingsPageItem]> {
     ])
 }
 
+#[allow(dead_code)] // clean-cn: 云端编辑预测已禁用
 fn codestral_settings() -> Box<[SettingsPageItem]> {
     Box::new([
         SettingsPageItem::SettingItem(SettingItem {
@@ -870,6 +877,7 @@ fn codestral_settings() -> Box<[SettingsPageItem]> {
     ])
 }
 
+#[allow(dead_code)] // clean-cn: 云端编辑预测已禁用
 fn mercury_settings() -> Box<[SettingsPageItem]> {
     Box::new([SettingsPageItem::SettingItem(SettingItem {
         title: t!("settings_ui.page_data.prediction_debounce_title").into(),
@@ -904,6 +912,7 @@ fn mercury_settings() -> Box<[SettingsPageItem]> {
     })])
 }
 
+#[allow(dead_code)] // clean-cn: 云端编辑预测已禁用
 fn zed_settings() -> Box<[SettingsPageItem]> {
     Box::new([SettingsPageItem::SettingItem(SettingItem {
         title: t!("settings_ui.page_data.prediction_debounce_title").into(),
@@ -938,6 +947,7 @@ fn zed_settings() -> Box<[SettingsPageItem]> {
     })])
 }
 
+#[allow(dead_code)] // clean-cn: 云端编辑预测已禁用
 fn render_zed_provider(
     settings_window: &SettingsWindow,
     window: &mut Window,
@@ -961,6 +971,7 @@ fn render_zed_provider(
         .child(div().px_neg_8().child(additional_fields))
 }
 
+#[allow(dead_code)] // clean-cn: 云端编辑预测已禁用
 fn copilot_settings() -> Box<[SettingsPageItem]> {
     Box::new([SettingsPageItem::SettingItem(SettingItem {
         title: t!("settings_ui.page_data.prediction_debounce_title").into(),
@@ -995,6 +1006,7 @@ fn copilot_settings() -> Box<[SettingsPageItem]> {
     })])
 }
 
+#[allow(dead_code)] // clean-cn: 云端编辑预测已禁用
 fn render_github_copilot_provider(
     settings_window: &SettingsWindow,
     window: &mut Window,
