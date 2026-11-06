@@ -316,8 +316,8 @@ mod tests {
     use gpui::{BorrowAppContext, TestAppContext};
     use project::Project;
     use settings::{
-        EditPredictionPromptFormatContent, EditPredictionProvider, SettingsStore,
-        OllamaEditPredictionSettingsContent,
+        EditPredictionPromptFormatContent, EditPredictionProvider,
+        OllamaEditPredictionSettingsContent, SettingsStore,
     };
     use workspace::AppState;
 

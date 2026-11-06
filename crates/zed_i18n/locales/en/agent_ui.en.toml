@@ -64,6 +64,7 @@ disabled_for_thread = "Sandboxing is disabled for this thread"
 [agent_ui.terminal_tool_header]
 stop_this_command = "Stop This Command"
 stop_this_command_meta = "Also possible by placing your cursor inside the terminal and using regular terminal bindings."
+stop_this_command_process = "Asks the agent to stop this process. Its output stays here."
 exited_with_code = "Exited with code %{code}"
 sandbox_learn_more = "%{detail} Click to learn more about sandboxing."
 

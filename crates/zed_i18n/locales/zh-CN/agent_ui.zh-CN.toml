@@ -64,6 +64,7 @@ disabled_for_thread = "此对话已禁用沙箱"
 [agent_ui.terminal_tool_header]
 stop_this_command = "停止此命令"
 stop_this_command_meta = "也可以将光标置于终端内，使用常规终端快捷键来停止。"
+stop_this_command_process = "请 Agent 停止此进程，其输出将保留在这里。"
 exited_with_code = "已退出，退出码 %{code}"
 sandbox_learn_more = "%{detail} 点击了解沙箱详情。"
 

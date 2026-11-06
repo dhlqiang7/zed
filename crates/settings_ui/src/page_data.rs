@@ -4376,7 +4376,7 @@ fn search_and_files_page() -> SettingsPage {
 }
 
 fn window_and_layout_page() -> SettingsPage {
-    fn status_bar_section() -> [SettingsPageItem; 12] {
+    fn status_bar_section() -> [SettingsPageItem; 13] {
         [
             SettingsPageItem::SectionHeader(t!("settings_ui.page_data.status_bar_section").into()),
             SettingsPageItem::SettingItem(SettingItem {
@@ -4547,6 +4547,33 @@ fn window_and_layout_page() -> SettingsPage {
                     pick: |settings_content| settings_content.diagnostics.as_ref()?.button.as_ref(),
                     write: |settings_content, value, _| {
                         settings_content.diagnostics.get_or_insert_default().button = value;
+                    },
+                }),
+                metadata: None,
+                files: USER,
+            }),
+            SettingsPageItem::SettingItem(SettingItem {
+                title: t!("settings_ui.page_data.edit_prediction_button_title").into(),
+                description: t!("settings_ui.page_data.edit_prediction_button_description").into(),
+                field: Box::new(SettingField {
+                    organization_override: None,
+                    json_path: Some("edit_predictions.button"),
+                    pick: |settings_content| {
+                        settings_content
+                            .project
+                            .all_languages
+                            .edit_predictions
+                            .as_ref()?
+                            .button
+                            .as_ref()
+                    },
+                    write: |settings_content, value, _| {
+                        settings_content
+                            .project
+                            .all_languages
+                            .edit_predictions
+                            .get_or_insert_default()
+                            .button = value;
                     },
                 }),
                 metadata: None,
@@ -7231,7 +7258,7 @@ fn panels_page() -> SettingsPage {
         ]
     }
 
-    fn debugger_panel_section() -> [SettingsPageItem; 2] {
+    fn debugger_panel_section() -> [SettingsPageItem; 4] {
         [
             SettingsPageItem::SectionHeader(
                 t!("settings_ui.page_data.debugger_panel_section").into(),
@@ -7245,6 +7272,46 @@ fn panels_page() -> SettingsPage {
                     pick: |settings_content| settings_content.debugger.as_ref()?.dock.as_ref(),
                     write: |settings_content, value, _| {
                         settings_content.debugger.get_or_insert_default().dock = value;
+                    },
+                }),
+                metadata: None,
+                files: USER,
+            }),
+            SettingsPageItem::SettingItem(SettingItem {
+                title: t!("settings_ui.page_data.debugger_panel_default_width_title").into(),
+                description: t!("settings_ui.page_data.debugger_panel_default_width_description")
+                    .into(),
+                field: Box::new(SettingField {
+                    organization_override: None,
+                    json_path: Some("debugger.default_width"),
+                    pick: |settings_content| {
+                        settings_content.debugger.as_ref()?.default_width.as_ref()
+                    },
+                    write: |settings_content, value, _| {
+                        settings_content
+                            .debugger
+                            .get_or_insert_default()
+                            .default_width = value;
+                    },
+                }),
+                metadata: None,
+                files: USER,
+            }),
+            SettingsPageItem::SettingItem(SettingItem {
+                title: t!("settings_ui.page_data.debugger_panel_default_height_title").into(),
+                description: t!("settings_ui.page_data.debugger_panel_default_height_description")
+                    .into(),
+                field: Box::new(SettingField {
+                    organization_override: None,
+                    json_path: Some("debugger.default_height"),
+                    pick: |settings_content| {
+                        settings_content.debugger.as_ref()?.default_height.as_ref()
+                    },
+                    write: |settings_content, value, _| {
+                        settings_content
+                            .debugger
+                            .get_or_insert_default()
+                            .default_height = value;
                     },
                 }),
                 metadata: None,

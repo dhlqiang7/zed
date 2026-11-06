@@ -197,7 +197,8 @@ fn render_provider_dropdown(window: &mut Window, cx: &mut App) -> AnyElement {
                 .child(
                     DropdownMenu::new("provider-dropdown", current_provider_name, menu)
                         .tab_index(0)
-                        .style(DropdownStyle::Outlined),
+                        .style(DropdownStyle::Outlined)
+                        .attach(gpui::Anchor::BottomRight),
                 ),
         )
         .into_any_element()
@@ -206,8 +207,12 @@ fn render_provider_dropdown(window: &mut Window, cx: &mut App) -> AnyElement {
 enum ApiKeyDocs {
     // clean-cn: 云端编辑预测已禁用，Link 变体不再构造
     #[allow(dead_code)]
-    Link { dashboard_url: SharedString },
-    Custom { message: SharedString },
+    Link {
+        dashboard_url: SharedString,
+    },
+    Custom {
+        message: SharedString,
+    },
 }
 
 fn render_api_key_provider(
