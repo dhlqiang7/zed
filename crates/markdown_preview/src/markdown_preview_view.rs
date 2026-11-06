@@ -396,6 +396,9 @@ impl MarkdownPreviewView {
                     None,
                     MarkdownOptions {
                         parse_html: true,
+                        // fork-cn: 上游 mermaid 渲染管线（mermaid_render crate）已完整但
+                        // 未在任何产品入口启用此开关，预览中启用以渲染 ```mermaid 代码块
+                        render_mermaid_diagrams: true,
                         render_embedded_diagrams: true,
                         parse_heading_slugs: true,
                         render_metadata_blocks: true,
