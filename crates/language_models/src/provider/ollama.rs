@@ -515,7 +515,7 @@ impl LanguageModelProvider for OllamaLanguageModelProvider {
                     .into()
             })
             .description(InlineDescription::Text(
-                "Run local models on your machine with Ollama.".into(),
+                t!("language_models.ollama.description").into(),
             )),
         ))
     }
@@ -866,20 +866,20 @@ impl ConfigurationView {
                     .child(
                         ListBulletItem::new("")
                             .child(
-                                Label::new("Download and install Ollama from").color(Color::Muted),
+                                Label::new(t!("language_models.ollama.download_and_install_from")).color(Color::Muted),
                             )
                             .child(ButtonLink::new("ollama.com", "https://ollama.com/download")),
                     )
                     .child(
                         ListBulletItem::new("")
                             .child(
-                                Label::new("Start Ollama and download a model:")
+                                Label::new(t!("language_models.ollama.start_and_download"))
                                     .color(Color::Muted),
                             )
                             .child(Label::new("ollama run gpt-oss:20b").inline_code(cx)),
                     )
                     .child(
-                        ListBulletItem::new("Click 'Connect' below to start using Ollama in Zed")
+                        ListBulletItem::new(t!("language_models.ollama.click_connect"))
                             .label_color(Color::Muted),
                     ),
             )
@@ -898,7 +898,7 @@ impl ConfigurationView {
         let configured_card_label = if env_var_set {
             format!("API key set in {API_KEY_ENV_VAR_NAME} environment variable.")
         } else {
-            "API key configured".to_string()
+            t!("language_models.provider.api_key_configured").to_string()
         };
 
         let api_key_control = if !state.api_key_state.has_key() {
@@ -995,7 +995,10 @@ impl ConfigurationView {
                         .child(Label::new(api_url)),
                 )
                 .child(
-                    Button::new("reset-api-url", "Reset API URL")
+                    Button::new(
+                    "reset-api-url",
+                    t!("language_models.provider.reset_api_url"),
+                )
                         .style(ButtonStyle::Outlined)
                         .label_size(LabelSize::Small)
                         .start_icon(Icon::new(IconName::Undo).size(IconSize::Small))
@@ -1053,7 +1056,10 @@ impl Render for ConfigurationView {
                                     )
                                 } else {
                                     this.child(
-                                        Button::new("download_ollama_button", "Download Ollama")
+                                        Button::new(
+                        "download_ollama_button",
+                        t!("language_models.ollama.download"),
+                    )
                                             .style(ButtonStyle::OutlinedGhost)
                                             .size(ButtonSize::Medium)
                                             .end_icon(
@@ -1069,7 +1075,10 @@ impl Render for ConfigurationView {
                                 }
                             })
                             .child(
-                                Button::new("view-models", "View All Models")
+                                Button::new(
+                        "view-models",
+                        t!("language_models.ollama.view_all_models"),
+                    )
                                     .style(ButtonStyle::OutlinedGhost)
                                     .size(ButtonSize::Medium)
                                     .end_icon(
@@ -1089,12 +1098,12 @@ impl Render for ConfigurationView {
                                         h_flex()
                                             .gap_1()
                                             .child(Icon::new(IconName::Check).color(Color::Success))
-                                            .child(Label::new("Connected")),
+                                            .child(Label::new(t!("language_models.provider.connected"))),
                                     )
                                     .child(
                                         IconButton::new("refresh-models", IconName::RotateCcw)
                                             .icon_size(IconSize::Small)
-                                            .tooltip(Tooltip::text("Refresh Models"))
+                                            .tooltip(Tooltip::text(t!("language_models.provider.refresh_models")))
                                             .on_click(cx.listener(|this, _, window, cx| {
                                                 this.state.update(cx, |state, _| {
                                                     state.fetched_models.clear();
@@ -1105,7 +1114,10 @@ impl Render for ConfigurationView {
                             )
                         } else {
                             this.child(
-                                Button::new("retry_ollama_models", "Connect")
+                                Button::new(
+                                    "retry_ollama_models",
+                                    t!("language_models.provider.connect"),
+                                )
                                     .style(ButtonStyle::Outlined)
                                     .size(ButtonSize::Medium)
                                     .start_icon(

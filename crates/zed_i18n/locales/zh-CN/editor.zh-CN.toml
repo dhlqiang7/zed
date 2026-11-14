@@ -50,3 +50,15 @@ session_not_paused = "调试会话已不再处于暂停状态"
 
 [editor.split]
 unified = "统一视图"
+
+[editor.edit_prediction]
+accept = "接受"
+scroll = "滚动"
+jump_to_edit = "跳到编辑"
+hold = "按住"
+preview = "预览"
+conflict_title = "与接受快捷键冲突"
+conflict_description = "当前键位配置覆盖了默认的接受快捷键。要继续使用，请为 `editor::AcceptEditPrediction` 动作分配一个快捷键。"
+assign_keybinding = "分配快捷键"
+see_docs = "查看文档"
+jump_to_file = "跳转到 %{file}"

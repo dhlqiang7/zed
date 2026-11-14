@@ -1,0 +1,9 @@
+# markdown crate 中文 locale
+_version = 1
+
+[markdown.mermaid]
+tab_preview = "预览"
+tab_code = "代码"
+rendering = "渲染中…"
+load_failed = "Mermaid 图表加载失败"
+reset_zoom = "重置缩放"

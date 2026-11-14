@@ -16,6 +16,7 @@ use ui::prelude::*;
 use workspace::item::Item;
 use workspace::notifications::NotifyResultExt;
 use workspace::{Pane, Workspace};
+use zed_i18n::t;
 
 use crate::{OpenFollowingPreview, OpenPreview, OpenPreviewToTheSide};
 
@@ -362,8 +363,8 @@ impl Item for MermaidPreviewView {
         self.buffer
             .as_ref()
             .and_then(|mermaid_path| mermaid_path.read(cx).file())
-            .map(|name| format!("Preview {}", name.file_name(cx)).into())
-            .unwrap_or_else(|| "Mermaid Preview".into())
+            .map(|name| t!("mermaid_preview.preview_name", name = name.file_name(cx)).into())
+            .unwrap_or_else(|| t!("mermaid_preview.tab_title").to_string().into())
     }
 
     fn telemetry_event_text(&self) -> Option<&'static str> {

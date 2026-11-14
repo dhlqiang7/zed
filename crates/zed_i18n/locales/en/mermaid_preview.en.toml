@@ -1,0 +1,6 @@
+# mermaid_preview crate English locale (fallback language)
+_version = 1
+
+[mermaid_preview]
+tab_title = "Mermaid Preview"
+preview_name = "Preview %{name}"

@@ -10849,6 +10849,7 @@ dependencies = [
  "theme_settings",
  "ui",
  "util",
+ "zed_i18n",
 ]
 
 [[package]]
@@ -11056,6 +11057,7 @@ dependencies = [
  "ui",
  "workspace",
  "zed_actions",
+ "zed_i18n",
 ]
 
 [[package]]

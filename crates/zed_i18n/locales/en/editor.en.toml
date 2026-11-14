@@ -50,3 +50,15 @@ session_not_paused = "The debug session is no longer paused here"
 
 [editor.split]
 unified = "Unified"
+
+[editor.edit_prediction]
+accept = "Accept"
+scroll = "Scroll"
+jump_to_edit = "Jump to Edit"
+hold = "Hold"
+preview = "Preview"
+conflict_title = "Conflict with Accept Keybinding"
+conflict_description = "Your keymap currently overrides the default accept keybinding. To continue, assign one keybinding for the `editor::AcceptEditPrediction` action."
+assign_keybinding = "Assign Keybinding"
+see_docs = "See Docs"
+jump_to_file = "Jump to %{file}"

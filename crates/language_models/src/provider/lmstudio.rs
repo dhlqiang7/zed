@@ -344,7 +344,7 @@ impl LanguageModelProvider for LmStudioLanguageModelProvider {
                     .into()
             })
             .description(InlineDescription::Text(
-                "Run local LLMs like Llama, Phi, and Qwen with LM Studio.".into(),
+                t!("language_models.lmstudio.description").into(),
             )),
         ))
     }
@@ -753,7 +753,7 @@ impl ConfigurationView {
         let configured_card_label = if env_var_set {
             format!("API key set in {API_KEY_ENV_VAR_NAME} environment variable.")
         } else {
-            "API key configured".to_string()
+            t!("language_models.provider.api_key_configured").to_string()
         };
 
         let api_key_control = if !state.api_key_state.has_key() {
@@ -847,7 +847,7 @@ impl Render for ConfigurationView {
                                     this.child(
                                         Button::new(
                                             "download_lmstudio_button",
-                                            "Download LM Studio",
+                                            t!("language_models.lmstudio.download"),
                                         )
                                         .style(ButtonStyle::OutlinedGhost)
                                         .size(ButtonSize::Medium)
@@ -864,7 +864,10 @@ impl Render for ConfigurationView {
                                 }
                             })
                             .child(
-                                Button::new("view-models", "Model Catalog")
+                                Button::new(
+                        "view-models",
+                        t!("language_models.lmstudio.model_catalog"),
+                    )
                                     .style(ButtonStyle::OutlinedGhost)
                                     .size(ButtonSize::Medium)
                                     .end_icon(
@@ -886,11 +889,11 @@ impl Render for ConfigurationView {
                                         h_flex()
                                             .gap_1()
                                             .child(Icon::new(IconName::Check).color(Color::Success))
-                                            .child(Label::new("Connected"))
+                                            .child(Label::new(t!("language_models.provider.connected")))
                                     )
                                     .child(
                                         IconButton::new("refresh-models", IconName::RotateCcw)
-                                            .tooltip(Tooltip::text("Refresh Models"))
+                                            .tooltip(Tooltip::text(t!("language_models.provider.refresh_models")))
                                             .icon_size(IconSize::Small)
                                             .on_click(cx.listener(|this, _, _window, cx| {
                                                 this.state.update(cx, |state, _| {
@@ -902,7 +905,10 @@ impl Render for ConfigurationView {
                             )
                         } else {
                             this.child(
-                                Button::new("retry_lmstudio_models", "Connect")
+                                Button::new(
+                                    "retry_lmstudio_models",
+                                    t!("language_models.provider.connect"),
+                                )
                                     .style(ButtonStyle::Outlined)
                                     .size(ButtonSize::Medium)
                                     .start_icon(

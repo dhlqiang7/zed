@@ -1487,9 +1487,7 @@ impl ThreadView {
         cx: &mut App,
     ) -> Task<Result<(Vec<acp_v2::ContentBlock>, Vec<Entity<Buffer>>)>> {
         if message_editor.read(cx).editor().read(cx).read_only(cx) {
-            return Task::ready(Err(anyhow!(
-                "This draft contains unsupported content and cannot be edited or sent. Discard the draft to write a new message."
-            )));
+            return Task::ready(Err(anyhow!("{}", t!("agent_ui.thread_view.error_draft_unsupported"))));
         }
         let expand = self.as_native_thread(cx).is_some_and(|thread| {
             let thread = thread.read(cx);
@@ -1879,9 +1877,7 @@ impl ThreadView {
         if let Some(content) = content {
             if !content.iter().all(acp_thread::content::can_convert_to_v1) {
                 self.handle_thread_error(
-                    anyhow!(
-                        "This saved submission contains unsupported content and cannot be restored. The original submission has been kept."
-                    ),
+                    anyhow!("{}", t!("agent_ui.thread_view.error_saved_unsupported")),
                     cx,
                 );
                 return;
@@ -2661,8 +2657,7 @@ impl ThreadView {
                 ThreadError::ZedPaymentRequired => (
                     "payment_required",
                     None,
-                    "You reached your free usage limit. Upgrade to Zed Pro for more prompts."
-                        .into(),
+                    t!("agent_ui.thread_view.error_free_usage_limit").into(),
                 ),
                 ThreadError::Refusal => {
                     let model_or_agent_name = self.current_model_name(cx);
@@ -2695,7 +2690,7 @@ impl ThreadView {
                 ThreadError::PromptTooLarge => (
                     "prompt_too_large",
                     None,
-                    "Context too large for the model's context window.".into(),
+                    t!("agent_ui.thread_view.error_context_too_large").into(),
                 ),
                 ThreadError::NoCredentials { provider } => (
                     "no_api_key",
@@ -2728,10 +2723,10 @@ impl ThreadView {
                 ThreadError::MaxOutputTokens => (
                     "max_output_tokens",
                     None,
-                    "Model reached its maximum output length.".into(),
+                    t!("agent_ui.thread_view.error_max_output_length").into(),
                 ),
                 ThreadError::NoModelSelected => {
-                    ("no_model_selected", None, "No model selected.".into())
+                    ("no_model_selected", None, t!("agent_ui.thread_view.error_no_model_selected").into())
                 }
                 ThreadError::ApiError { provider } => (
                     "api_error",
@@ -2901,9 +2896,7 @@ impl ThreadView {
                 // Rewind can outlive a source update that replaces the editor with a fallback.
                 if message_editor.read(cx).editor().read(cx).read_only(cx) {
                     thread.handle_thread_error(
-                        anyhow!(
-                            "The conversation was rewound, but the message became read-only and was not resent."
-                        ),
+                        anyhow!("{}", t!("agent_ui.thread_view.error_rewound_read_only")),
                         cx,
                     );
                     return;
@@ -3233,7 +3226,7 @@ impl ThreadView {
     ) -> bool {
         if self.message_editor.read(cx).editor().read(cx).read_only(cx) {
             self.handle_thread_error(
-                anyhow!("Discard the unsupported draft before moving a queued message into the composer."),
+                anyhow!("{}", t!("agent_ui.thread_view.error_discard_unsupported_queued")),
                 cx,
             );
             return false;
@@ -3245,7 +3238,7 @@ impl ThreadView {
                 .all(acp_thread::content::can_convert_to_v1)
         }) {
             self.handle_thread_error(
-                anyhow!("This queued message contains unsupported content and cannot be edited."),
+                anyhow!("{}", t!("agent_ui.thread_view.error_queued_unsupported")),
                 cx,
             );
             return false;
@@ -4635,7 +4628,7 @@ impl ThreadView {
                             .child(
                                 Button::new(
                                     format!("generic-permission-cancel-{request_id:?}"),
-                                    "Cancel",
+                                    t!("agent_ui.thread_view.cancel"),
                                 )
                                 .label_size(LabelSize::Small)
                                 .on_click(cx.listener(
@@ -5556,7 +5549,10 @@ impl ThreadView {
             div()
                 .debug_selector(|| "discard-protected-draft".into())
                 .child(
-                    Button::new("discard-protected-draft", "Discard draft")
+                    Button::new(
+                        "discard-protected-draft",
+                        t!("agent_ui.thread_view.discard_draft"),
+                    )
                         .label_size(LabelSize::Small)
                         .on_click(cx.listener(|this, _, window, cx| {
                             this._draft_resolve_task.take();
@@ -5699,12 +5695,15 @@ impl ThreadView {
                 (
                     "activity-background",
                     if background_count == 1 {
-                        "1 task in background".into()
+                        t!("agent_ui.thread_view.background_task_singular").into()
                     } else {
-                        format!("{background_count} tasks in background").into()
+                        t!(
+                            "agent_ui.thread_view.background_tasks_count",
+                            count = background_count
+                        )
+                        .into()
                     },
-                    "The agent finished responding, but work it started keeps running in the background, such as a dev server or a scheduled task."
-                        .into(),
+                    t!("agent_ui.thread_view.background_tasks_notice").into(),
                 )
             }
             ForegroundActivity::Running | ForegroundActivity::RequiresAction => return None,
@@ -10266,7 +10265,7 @@ impl ThreadView {
                                                 div()
                                                     .id(("paused-tool-call", entry_ix))
                                                     .pr_0p5()
-                                                    .tooltip(Tooltip::text("Paused"))
+                                                    .tooltip(Tooltip::text(t!("agent_ui.thread_view.paused")))
                                                     .child(
                                                         Icon::new(IconName::DebugPause)
                                                             .color(Color::Muted)
@@ -10284,7 +10283,7 @@ impl ThreadView {
                                             )
                                             .icon_size(IconSize::Small)
                                             .icon_color(Color::Error)
-                                            .tooltip(Tooltip::text("Stop Tool Call"))
+                                            .tooltip(Tooltip::text(t!("agent_ui.thread_view.stop_tool_call")))
                                             .on_click(cx.listener(
                                                 move |this, _, _window, cx| {
                                                     this.cancel_tool_call(
@@ -11675,9 +11674,14 @@ impl ThreadView {
     ) -> Option<SharedString> {
         let tool_name = tool_name.filter(|name| !name.trim().is_empty());
         match (tool_name, interrupted_edit) {
-            (Some(name), true) => Some(format!("Interrupted Edit\nTool: {name}").into()),
+            (Some(name), true) => Some(format!(
+                "{}\n{}",
+                t!("agent_ui.thread_view.interrupted_edit"),
+                t!("agent_ui.thread_view.tool_name", name = name)
+            )
+            .into()),
             (Some(name), false) => Some(format!("Tool: {name}").into()),
-            (None, true) => Some("Interrupted Edit".into()),
+            (None, true) => Some(t!("agent_ui.thread_view.interrupted_edit").into()),
             (None, false) => None,
         }
     }
@@ -11968,7 +11972,7 @@ impl ThreadView {
                             )
                             .when(file.hunks.is_empty(), |this| {
                                 this.child(
-                                    Label::new("No text preview available")
+                                    Label::new(t!("agent_ui.thread_view.no_text_preview_available"))
                                         .size(LabelSize::XSmall)
                                         .color(Color::Muted),
                                 )
@@ -11995,7 +11999,7 @@ impl ThreadView {
                         render.files.is_empty() && render.fallback.is_none(),
                         |this| {
                             this.p_2().child(
-                                Label::new("No text preview available")
+                                Label::new(t!("agent_ui.thread_view.no_text_preview_available"))
                                     .size(LabelSize::XSmall)
                                     .color(Color::Muted),
                             )
@@ -13260,9 +13264,7 @@ impl ThreadView {
                             || this.message_editor.read(cx).editor().read(cx).read_only(cx)
                         {
                             this.handle_thread_error(
-                                anyhow!(
-                                    "This saved submission cannot be restored into the composer. The original submission and draft have been kept."
-                                ),
+                                anyhow!("{}", t!("agent_ui.thread_view.error_saved_not_restorable")),
                                 cx,
                             );
                             return;

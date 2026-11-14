@@ -7,8 +7,10 @@ context_window = "上下文窗口"
 
 [language_models.lmstudio]
 needs_running = "LM Studio 需要处于运行状态，并至少已下载一个模型。"
-description = "运行 Llama、Phi、Qwen 等本地大语言模型。"
+description = "使用 LM Studio 运行 Llama、Phi、Qwen 等本地大语言模型。"
 first_model_hint = "要获取第一个模型，可尝试运行"
+download = "下载 LM Studio"
+model_catalog = "模型目录"
 
 [language_models.opencode]
 use_api_key_intro = "在 Zed 中使用 OpenCode 模型需要一个 API 密钥："
@@ -26,3 +28,60 @@ reset_api_key = "重置 API 密钥"
 
 [language_models.deepseek]
 reasoning_effort_high = "高"
+
+[language_models.provider]
+connected = "已连接"
+connect = "连接"
+refresh_models = "刷新模型列表"
+api_key_configured = "已配置 API 密钥"
+reset_api_url = "重置 API 地址"
+
+[language_models.ollama]
+description = "使用 Ollama 在本机运行本地模型。"
+download_and_install_from = "从以下地址下载并安装 Ollama："
+start_and_download = "启动 Ollama 并下载模型："
+click_connect = "点击下方“连接”开始在 Zed 中使用 Ollama"
+download = "下载 Ollama"
+view_all_models = "查看全部模型"
+
+[language_models.llama_cpp]
+description = "使用 LlamaCpp 在本机运行本地模型。"
+install_from = "从以下地址安装 llama.cpp："
+click_connect = "点击下方“连接”开始在 Zed 中使用 llama.cpp"
+open_webui = "打开 WebUI"
+get = "获取 llama.cpp"
+browse_gguf_models = "浏览 GGUF 模型"
+
+[language_models.bedrock]
+form_access_key_id = "访问密钥 ID"
+form_secret_access_key = "私有访问密钥"
+form_session_token = "会话令牌（可选）"
+form_api_key = "Bedrock API 密钥"
+status_loading = "正在加载凭证…"
+status_using_automatic = "使用自动凭证（AWS 默认凭证链）"
+status_using_profile = "使用 AWS 配置文件：%{profile}"
+status_using_sso_profile = "使用 AWS SSO 配置文件：%{profile}"
+status_using_iam = "使用 IAM 凭证"
+status_using_iam_from_env = "使用来自环境变量 %{access_var} 和 %{secret_var} 的 IAM 凭证"
+status_using_api_key = "使用 Bedrock API 密钥"
+status_using_api_key_from_env = "使用来自环境变量 %{var} 的 Bedrock API 密钥"
+status_not_authenticated = "未认证"
+status_auth_configured_notice = "认证方式在设置中配置。请编辑 settings.json 以更改。"
+setup_intro = "要在 Bedrock 上使用 Zed 的智能体，可以通过设置文件自定义认证策略，或使用静态凭证。"
+setup_first_steps = "首先，要访问 AWS 上的模型，你需要："
+setup_grant_permissions = "根据以下说明，为你将使用的策略授予权限："
+reset_env_vars_tooltip = "要重置凭证，请取消设置环境变量 %{a}、%{b}、%{c} 或 %{d}。"
+setup_prerequisites = "前置条件"
+setup_bedrock_console = "Bedrock 控制台"
+setup_model_catalog = "Bedrock 模型目录"
+setup_select_models = "选择你想要访问的模型："
+setup_iam_console = "IAM 控制台"
+setup_attach_permissions_prefix = "将必要的 Bedrock 权限附加到"
+setup_attach_permissions_link = "此用户"
+keys_notice = "在下方输入访问密钥或 Bedrock API 密钥（二选一，不可同时使用）"
+static_credentials = "静态凭证"
+static_for_access_keys = "使用访问密钥：在 AWS 控制台中创建一个具有编程访问权限的 IAM 用户"
+static_for_api_keys = "使用 Bedrock API 密钥：从"
+static_credentials_description = "此方式使用你的 AWS 访问密钥 ID 和私有访问密钥，或 Bedrock API 密钥。"
+using_the_api_key = "使用 API 密钥"
+region_note = "区域通过 %{var} 环境变量或 settings.json 配置（默认为 us-east-1）。"

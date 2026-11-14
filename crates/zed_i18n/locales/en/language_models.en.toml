@@ -7,8 +7,10 @@ context_window = "Context Window"
 
 [language_models.lmstudio]
 needs_running = "LM Studio needs to be running with at least one model downloaded."
-description = "Run local LLMs like Llama, Phi, and Qwen."
+description = "Run local LLMs like Llama, Phi, and Qwen with LM Studio."
 first_model_hint = "To get your first model, try running"
+download = "Download LM Studio"
+model_catalog = "Model Catalog"
 
 [language_models.opencode]
 use_api_key_intro = "To use OpenCode models in Zed, you need an API key:"
@@ -26,3 +28,60 @@ reset_api_key = "Reset API Key"
 
 [language_models.deepseek]
 reasoning_effort_high = "High"
+
+[language_models.provider]
+connected = "Connected"
+connect = "Connect"
+refresh_models = "Refresh Models"
+api_key_configured = "API key configured"
+reset_api_url = "Reset API URL"
+
+[language_models.ollama]
+description = "Run local models on your machine with Ollama."
+download_and_install_from = "Download and install Ollama from"
+start_and_download = "Start Ollama and download a model:"
+click_connect = "Click 'Connect' below to start using Ollama in Zed"
+download = "Download Ollama"
+view_all_models = "View All Models"
+
+[language_models.llama_cpp]
+description = "Run local models on your machine with LlamaCpp."
+install_from = "Install llama.cpp from"
+click_connect = "Click 'Connect' below to start using llama.cpp in Zed"
+open_webui = "Open WebUI"
+get = "Get llama.cpp"
+browse_gguf_models = "Browse GGUF Models"
+
+[language_models.bedrock]
+form_access_key_id = "Access Key ID"
+form_secret_access_key = "Secret Access Key"
+form_session_token = "Session Token (Optional)"
+form_api_key = "Bedrock API Key"
+status_loading = "Loading credentials..."
+status_using_automatic = "Using automatic credentials (AWS default chain)"
+status_using_profile = "Using AWS profile: %{profile}"
+status_using_sso_profile = "Using AWS SSO profile: %{profile}"
+status_using_iam = "Using IAM credentials"
+status_using_iam_from_env = "Using IAM credentials from %{access_var} and %{secret_var} environment variables"
+status_using_api_key = "Using Bedrock API Key"
+status_using_api_key_from_env = "Using Bedrock API Key from %{var} environment variable"
+status_not_authenticated = "Not authenticated"
+status_auth_configured_notice = "Authentication method is configured in settings. Edit settings.json to change."
+setup_intro = "To use Zed's agent with Bedrock, you can set a custom authentication strategy through your settings file or use static credentials."
+setup_first_steps = "But first, to access models on AWS, you need to:"
+setup_grant_permissions = "Grant permissions to the strategy you'll use according to the:"
+reset_env_vars_tooltip = "To reset your credentials, unset the %{a}, %{b}, and %{c} or %{d} environment variables."
+setup_prerequisites = "Prerequisites"
+setup_bedrock_console = "Bedrock Console"
+setup_model_catalog = "Bedrock Model Catalog"
+setup_select_models = "Select the models you would like access to:"
+setup_iam_console = "IAM Console"
+setup_attach_permissions_prefix = "Attach the necessary Bedrock permissions to"
+setup_attach_permissions_link = "this user"
+keys_notice = "Enter either access keys OR a Bedrock API Key below (not both)"
+static_credentials = "Static Credentials"
+static_for_access_keys = "For access keys: Create an IAM user in the AWS console with programmatic access"
+static_for_api_keys = "For Bedrock API Keys: Generate an API key from the"
+static_credentials_description = "This method uses your AWS access key ID and secret access key, or a Bedrock API Key."
+using_the_api_key = "Using the API key"
+region_note = "Region is configured via %{var} environment variable or settings.json (defaults to us-east-1)."

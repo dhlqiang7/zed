@@ -1,0 +1,6 @@
+# mermaid_preview crate 中文 locale
+_version = 1
+
+[mermaid_preview]
+tab_title = "Mermaid 预览"
+preview_name = "%{name} 预览"

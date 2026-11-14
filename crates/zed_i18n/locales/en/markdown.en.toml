@@ -1,0 +1,9 @@
+# markdown crate English locale (fallback language)
+_version = 1
+
+[markdown.mermaid]
+tab_preview = "Preview"
+tab_code = "Code"
+rendering = "Rendering..."
+load_failed = "Failed to load mermaid diagram"
+reset_zoom = "Reset Zoom"

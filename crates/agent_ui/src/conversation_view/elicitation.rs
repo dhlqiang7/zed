@@ -2360,7 +2360,7 @@ impl<'a> ElicitationCard<'a> {
                             h_flex()
                                 .gap_1()
                                 .child(
-                                    Label::new("Destination")
+                                    Label::new(t!("agent_ui.elicitation.destination"))
                                         .size(LabelSize::Small)
                                         .color(Color::Muted),
                                 )
