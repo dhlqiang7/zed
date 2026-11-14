@@ -2,8 +2,8 @@ use std::path::Path;
 
 use file_icons::FileIcons;
 use gpui::{
-    App, Context, Entity, EventEmitter, FocusHandle, Focusable, IntoElement, ParentElement, Render,
-    SharedString, Styled, Subscription, WeakEntity, Window, div,
+    App, Context, Entity, EventEmitter, FocusHandle, Focusable, IntoElement, ParentElement,
+    Render, ScrollHandle, SharedString, Styled, Subscription, WeakEntity, Window, div,
 };
 use language::{Buffer, BufferEvent};
 use markdown::{
@@ -24,6 +24,9 @@ pub struct MermaidPreviewView {
     focus_handle: FocusHandle,
     buffer: Option<Entity<Buffer>>,
     markdown: Entity<Markdown>,
+    /// Keeps the vertical scroll position across re-renders; without a
+    /// tracked handle gpui's per-frame scroll state resets on every notify.
+    scroll_handle: ScrollHandle,
     _buffer_subscription: Option<Subscription>,
     _workspace_subscription: Option<Subscription>,
     _theme_subscription: Subscription,
@@ -90,6 +93,7 @@ impl MermaidPreviewView {
                 focus_handle: cx.focus_handle(),
                 buffer,
                 markdown,
+                scroll_handle: ScrollHandle::new(),
                 _buffer_subscription: subscription,
                 _workspace_subscription: workspace_subscription,
                 _theme_subscription: theme_subscription,
@@ -126,6 +130,13 @@ impl MermaidPreviewView {
                             this.set_markdown_source(&buffer, cx);
                             cx.notify();
                         }
+                    } else if this.buffer.take().is_some() {
+                        // The active item is not a Mermaid file: clear the
+                        // preview rather than leaving the last diagram stale.
+                        this.markdown.update(cx, |markdown, cx| {
+                            markdown.reset(SharedString::default(), cx);
+                        });
+                        cx.notify();
                     }
                 }
             },
@@ -334,6 +345,7 @@ impl Render for MermaidPreviewView {
             .track_focus(&self.focus_handle(cx))
             .size_full()
             .overflow_y_scroll()
+            .track_scroll(&self.scroll_handle)
             .bg(cx.theme().colors().editor_background)
             .child(div().p_4().child(markdown_element))
     }
