@@ -920,6 +920,20 @@ pub mod preview {
             ]
         );
     }
+
+    pub mod mermaid {
+        use gpui::actions;
+
+        actions!(
+            mermaid,
+            [
+                /// Opens a Mermaid preview for the current file.
+                OpenPreview,
+                /// Opens a Mermaid preview in a split pane.
+                OpenPreviewToTheSide,
+            ]
+        );
+    }
 }
 
 pub mod agents_sidebar {

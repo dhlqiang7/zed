@@ -1,7 +1,8 @@
 use collections::HashMap;
 use gpui::{
-    Animation, AnimationExt, AnyElement, App, ClipboardItem, Context, Entity, ImageSource,
-    ParsedSvg, RenderImage, SMOOTH_SVG_SCALE_FACTOR, ScrollDelta, ScrollEvent, ScrollHandle, Size,
+    Animation, AnimationExt, AnyElement, App, ClipboardItem, Context, CursorStyle, Entity,
+    ImageSource, MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent, ParsedSvg, Pixels,
+    Point, RenderImage, SMOOTH_SVG_SCALE_FACTOR, ScrollDelta, ScrollEvent, ScrollHandle, Size,
     Stateful, StyledText, Task, Window, img, pulsating_between, size,
 };
 use std::collections::BTreeMap;
@@ -24,6 +25,14 @@ type MermaidDiagramCache = HashMap<ParsedMarkdownMermaidDiagramContents, Arc<Cac
 const MERMAID_ZOOM_STEP: f32 = 0.1;
 /// How many pixels of precise (trackpad) scroll make up one zoom tick.
 const PIXELS_PER_ZOOM_TICK: f32 = 20.0;
+
+/// An in-progress drag pan of a mermaid diagram's scroll container: where the
+/// pointer was when the drag started and the scroll offset at that moment.
+#[derive(Clone, Copy)]
+pub(crate) struct MermaidPanStart {
+    pub(crate) mouse: Point<Pixels>,
+    pub(crate) offset: Point<Pixels>,
+}
 
 #[derive(Clone, Debug)]
 pub(crate) struct ParsedMarkdownMermaidDiagram {
@@ -426,36 +435,12 @@ fn parse_mermaid_info(info: &str) -> Option<u32> {
     )
 }
 
-/// We deliberately block rendering of some diagram types, even though `merman`
-/// supports them, because we have not yet written custom CSS to ensure text is
-/// readable.
+/// A diagram is rendered whenever merman can detect its type; sources merman
+/// does not recognize fall back to a plain code block. This used to be a
+/// static prefix allowlist, which lagged behind the diagram families merman
+/// actually supports, so detection now asks merman directly.
 fn is_supported_diagram_type(source: &str) -> bool {
-    /// If updating this list, also update the system prompt!
-    const SUPPORTED_PREFIXES: &[&str] = &[
-        "flowchart",
-        "graph",
-        "sequenceDiagram",
-        "classDiagram",
-        "stateDiagram",
-        "stateDiagram-v2",
-        "erDiagram",
-        "gantt",
-        "pie",
-        "gitGraph",
-        "mindmap",
-        "timeline",
-        "quadrantChart",
-        "xychart-beta",
-        "journey",
-    ];
-    let first_token = source
-        .trim_start()
-        .split(|c: char| c.is_whitespace() || c == '\n')
-        .next()
-        .unwrap_or("");
-    SUPPORTED_PREFIXES
-        .iter()
-        .any(|prefix| first_token.eq_ignore_ascii_case(prefix))
+    mermaid_render::is_supported_diagram(source)
 }
 
 pub(crate) fn extract_mermaid_diagrams(
@@ -611,11 +596,13 @@ pub(crate) fn render_mermaid_diagram(
                 });
                 let base_size = mermaid_base_size(render_image, rasterized_scale);
                 let display_size = mermaid_display_size(base_size, zoom);
+                let panning = markdown.read(cx).mermaid_is_panning(source_offset);
                 let body = mermaid_scroll_container(
                     markdown.clone(),
                     source_offset,
                     &scroll_handle,
                     on_zoom.clone(),
+                    panning,
                 )
                 .child(image_element.w(display_size.width).h(display_size.height))
                 .into_any_element();
@@ -673,6 +660,7 @@ pub(crate) fn render_mermaid_diagram(
                 });
                 let base_size = mermaid_base_size(&fallback, fallback_scale);
                 let display_size = mermaid_display_size(base_size, zoom);
+                let panning = markdown.read(cx).mermaid_is_panning(source_offset);
                 // The fallback is the prior raster shown at the new size while
                 // the sharper one renders; keep it static so swapping rasters
                 // (e.g. on zoom) is seamless rather than flashing.
@@ -681,6 +669,7 @@ pub(crate) fn render_mermaid_diagram(
                     source_offset,
                     &scroll_handle,
                     on_zoom.clone(),
+                    panning,
                 )
                 .child(
                     fallback_element
@@ -757,6 +746,7 @@ fn mermaid_scroll_container(
     source_offset: usize,
     scroll_handle: &ScrollHandle,
     on_zoom: Option<MermaidZoomCallback>,
+    panning: bool,
 ) -> Stateful<Div> {
     let mut container = div()
         .id(ElementId::named_usize(
@@ -766,7 +756,16 @@ fn mermaid_scroll_container(
         .w_full()
         .overflow_x_scroll()
         .track_scroll(scroll_handle)
-        .on_scroll(on_mermaid_zoom_scroll(markdown, source_offset, on_zoom));
+        .on_scroll(on_mermaid_zoom_scroll(markdown.clone(), source_offset, on_zoom))
+        .on_mouse_down(
+            MouseButton::Left,
+            on_mermaid_pan_start(markdown.clone(), source_offset, scroll_handle),
+        )
+        .on_mouse_move(on_mermaid_pan_move(markdown.clone(), source_offset))
+        .on_mouse_up(
+            MouseButton::Left,
+            on_mermaid_pan_end(markdown.clone(), source_offset),
+        );
     // Without this, gpui maps vertical wheel deltas onto the x axis for
     // x-only scroll containers (see `paint_scroll_listener` in gpui's div),
     // hijacking plain vertical scrolls. Restricting to the actual axis lets
@@ -774,7 +773,60 @@ fn mermaid_scroll_container(
     // ctrl+vertical-scroll (zoom gesture) never moves this container either,
     // since its delta.x is zero.
     container.style().restrict_scroll_to_axis = Some(true);
+    // Hand cursors advertise that the diagram can be dragged to pan; the
+    // diagram body is otherwise a passive image surface.
+    container.style().mouse_cursor = Some(if panning {
+        CursorStyle::ClosedHand
+    } else {
+        CursorStyle::OpenHand
+    });
     container
+}
+
+/// Begins a drag pan on left-button press, remembering the pointer position
+/// and the scroll offset so subsequent moves can scroll by the delta.
+fn on_mermaid_pan_start(
+    markdown: Entity<Markdown>,
+    source_offset: usize,
+    scroll_handle: &ScrollHandle,
+) -> impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static {
+    let scroll_handle = scroll_handle.clone();
+    move |event, _window, cx| {
+        let (mouse, offset) = (event.position, scroll_handle.offset());
+        markdown.update(cx, |markdown, cx| {
+            markdown.mermaid_start_pan(source_offset, mouse, offset, cx);
+        });
+    }
+}
+
+fn on_mermaid_pan_move(
+    markdown: Entity<Markdown>,
+    source_offset: usize,
+) -> impl Fn(&MouseMoveEvent, &mut Window, &mut App) + 'static {
+    move |event, _window, cx| {
+        let position = event.position;
+        let pressed = event.pressed_button == Some(MouseButton::Left);
+        markdown.update(cx, |markdown, cx| {
+            if pressed {
+                markdown.mermaid_pan(source_offset, position, cx);
+            } else {
+                // The button was released while the pointer was outside this
+                // element; stop the pan so a later hover doesn't scroll.
+                markdown.mermaid_end_pan(source_offset, cx);
+            }
+        });
+    }
+}
+
+fn on_mermaid_pan_end(
+    markdown: Entity<Markdown>,
+    source_offset: usize,
+) -> impl Fn(&MouseUpEvent, &mut Window, &mut App) + 'static {
+    move |_event, _window, cx| {
+        markdown.update(cx, |markdown, cx| {
+            markdown.mermaid_end_pan(source_offset, cx);
+        });
+    }
 }
 
 fn with_mermaid_horizontal_scrollbar(
@@ -1185,7 +1237,7 @@ mod tests {
     fn test_unsupported_diagram_types_are_skipped() {
         let markdown = concat!(
             "```mermaid\nsankey-beta\n```\n\n",
-            "```mermaid\nblock-beta\n```\n\n",
+            "```mermaid\nthis is plain prose, not a diagram\n```\n\n",
             "```mermaid\nflowchart TD\n    A --> B\n```",
         );
         let events =
@@ -1193,13 +1245,18 @@ mod tests {
         let diagrams = extract_mermaid_diagrams(markdown, &events);
         assert_eq!(
             diagrams.len(),
-            1,
-            "Only the flowchart should be extracted; sankey and block should be skipped"
+            2,
+            "The sankey and flowchart should be extracted; prose should be skipped"
         );
         let diagram = diagrams.values().next().unwrap();
         assert!(
+            diagram.contents.contents.contains("sankey-beta"),
+            "The first extracted diagram should be the sankey"
+        );
+        let diagram = diagrams.values().next_back().unwrap();
+        assert!(
             diagram.contents.contents.contains("flowchart"),
-            "The extracted diagram should be the flowchart"
+            "The second extracted diagram should be the flowchart"
         );
     }
 

@@ -60,6 +60,7 @@ use std::{
     sync::Arc,
     time::{Duration, Instant},
 };
+use mermaid_preview::mermaid_preview_view::MermaidPreviewView;
 use svg_preview::svg_preview_view::SvgPreviewView;
 use theme_settings::ThemeSettings;
 use ui::{
@@ -463,6 +464,8 @@ actions!(
         OpenContextMenu,
         /// Opens an SVG preview for the selected file.
         OpenSvgPreview,
+        /// Opens a Mermaid preview for the selected file.
+        OpenMermaidPreview,
     ]
 );
 
@@ -1191,6 +1194,7 @@ impl ProjectPanel {
             let is_markdown =
                 !is_dir && MarkdownPreviewView::is_markdown_path(file_name, project.languages());
             let is_svg = !is_dir && SvgPreviewView::is_svg_path(file_name);
+            let is_mermaid = !is_dir && MermaidPreviewView::is_mermaid_path(file_name);
 
             let settings = ProjectPanelSettings::get_global(cx);
             let visible_worktrees_count = project.visible_worktrees(cx).count();
@@ -1229,6 +1233,12 @@ impl ProjectPanel {
                             menu.action(
                                 t!("project_panel.context_menu.open_svg_preview"),
                                 Box::new(OpenSvgPreview),
+                            )
+                        })
+                        .when(is_mermaid, |menu| {
+                            menu.action(
+                                t!("project_panel.context_menu.open_mermaid_preview"),
+                                Box::new(OpenMermaidPreview),
                             )
                         })
                         .when(is_dir, |menu| {
@@ -1270,6 +1280,12 @@ impl ProjectPanel {
                                 menu.action(
                                     t!("project_panel.context_menu.open_svg_preview"),
                                     Box::new(OpenSvgPreview),
+                                )
+                            })
+                            .when(is_mermaid, |menu| {
+                                menu.action(
+                                    t!("project_panel.context_menu.open_mermaid_preview"),
+                                    Box::new(OpenMermaidPreview),
                                 )
                             })
                             .when(is_dir, |menu| {
@@ -2157,6 +2173,25 @@ impl ProjectPanel {
         self.workspace
             .update(cx, |workspace, cx| {
                 SvgPreviewView::open_for_project_path(project_path, workspace, window, cx)
+            })
+            .ok();
+    }
+
+    fn open_mermaid_preview(
+        &mut self,
+        _: &OpenMermaidPreview,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let Some((project_path, file_name)) = self.selected_file(cx) else {
+            return;
+        };
+        if !MermaidPreviewView::is_mermaid_path(Path::new(file_name)) {
+            return;
+        }
+        self.workspace
+            .update(cx, |workspace, cx| {
+                MermaidPreviewView::open_for_project_path(project_path, workspace, window, cx)
             })
             .ok();
     }
@@ -7827,6 +7862,7 @@ impl Render for ProjectPanel {
                 .on_action(cx.listener(Self::open_split_horizontal))
                 .on_action(cx.listener(Self::open_markdown_preview))
                 .on_action(cx.listener(Self::open_svg_preview))
+                .on_action(cx.listener(Self::open_mermaid_preview))
                 .on_action(cx.listener(Self::confirm))
                 .on_action(cx.listener(Self::cancel))
                 .on_action(cx.listener(Self::copy_path))

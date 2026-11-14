@@ -10,10 +10,9 @@ pub(super) fn render_mermaid(source: &str, theme: &MermaidTheme) -> Result<Strin
     let diagram_id = format!("merman-{id}");
 
     let config = to_merman_config(theme);
-    let renderer = merman::svg::HeadlessRenderer::new()
-        .with_site_config(config)
-        .with_vendored_text_measurer()
-        .with_diagram_id(&diagram_id);
+    let engine = merman::MermaidEngine::new()
+        .with_site_config(merman::SourcePresentationConfig::from_config(config));
+    let renderer = merman::Renderer::new().with_presentation_engine(engine);
     // Apply merman's raster-safe pipeline before Zed-specific styling. The
     // pipeline handles generic rasterizer compatibility cleanup: foreignObject
     // fallback text, unsupported CSS removal, and invalid SVG attribute cleanup.
@@ -22,8 +21,24 @@ pub(super) fn render_mermaid(source: &str, theme: &MermaidTheme) -> Result<Strin
     let pipeline = merman::svg::SvgPipeline::resvg_safe()
         .with_postprocessor(merman::svg::CssOverridePostprocessor::strip_existing_important());
 
+    // The default `SvgEnvironment` is deterministic, which vendored text
+    // measurement in older merman versions provided; the diagram id scopes
+    // marker ids and styles when multiple SVGs share a document.
+    let request = merman::RenderRequest::svg(
+        source,
+        merman::OperationControl::new(),
+        merman::SvgRequest {
+            pipeline: Some(pipeline),
+            options: merman::svg::SvgRenderOptions {
+                diagram_id: Some(diagram_id),
+                ..Default::default()
+            },
+            ..Default::default()
+        },
+    );
+
     let svg = renderer
-        .render_svg_with_pipeline_sync(source, &pipeline)
+        .render_svg_data(request)
         .context("merman render failed")?
         .ok_or_else(|| anyhow!("merman returned no SVG for the given input"))?;
 

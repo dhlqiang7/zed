@@ -17,7 +17,8 @@ use crate::katex::{
 };
 use log::Level;
 use mermaid::{
-    MermaidState, ParsedMarkdownMermaidDiagram, extract_mermaid_diagrams, render_mermaid_diagram,
+    MermaidPanStart, MermaidState, ParsedMarkdownMermaidDiagram, extract_mermaid_diagrams,
+    render_mermaid_diagram,
 };
 pub use path_range::{LineCol, PathWithRange};
 use settings::Settings as _;
@@ -463,6 +464,8 @@ struct MermaidViewState {
     scroll_handle: ScrollHandle,
     /// The pending debounced re-raster scheduled by the last zoom change.
     debounce_task: Option<Task<()>>,
+    /// An in-progress drag pan of the diagram's scroll container, if any.
+    pan_start: Option<MermaidPanStart>,
     /// Overrides the scroll container width, which tests can't obtain from
     /// the scroll handle since its bounds are only set during layout.
     #[cfg(test)]
@@ -489,6 +492,7 @@ impl Default for MermaidViewState {
             zoomed_to_fit: false,
             scroll_handle: ScrollHandle::new(),
             debounce_task: None,
+            pan_start: None,
             #[cfg(test)]
             container_width_for_test: None,
         }
@@ -930,6 +934,63 @@ impl Markdown {
             .or_default()
             .scroll_handle
             .clone()
+    }
+
+    pub(crate) fn mermaid_is_panning(&self, source_offset: usize) -> bool {
+        self.mermaid_views
+            .get(&source_offset)
+            .is_some_and(|view| view.pan_start.is_some())
+    }
+
+    pub(crate) fn mermaid_start_pan(
+        &mut self,
+        source_offset: usize,
+        mouse: Point<Pixels>,
+        offset: Point<Pixels>,
+        cx: &mut Context<Self>,
+    ) {
+        let view = self.mermaid_views.entry(source_offset).or_default();
+        view.pan_start = Some(MermaidPanStart { mouse, offset });
+        cx.notify();
+    }
+
+    /// Advances the drag pan of a diagram, if one is in progress, so that the
+    /// content follows the pointer. The horizontal offset is clamped to the
+    /// scrollable range; the vertical axis is untouched since the container
+    /// only scrolls horizontally.
+    pub(crate) fn mermaid_pan(
+        &mut self,
+        source_offset: usize,
+        position: Point<Pixels>,
+        cx: &mut Context<Self>,
+    ) {
+        let Some(view) = self.mermaid_views.get_mut(&source_offset) else {
+            return;
+        };
+        let Some(pan) = view.pan_start else {
+            return;
+        };
+        let scroll_handle = &view.scroll_handle;
+        let delta = position - pan.mouse;
+        // `Pixels` is not ordered, so the clamp is done in `f32` space. Offsets
+        // are non-positive; `max_offset().x` is the most negative valid value.
+        let new_x = f32::from(pan.offset.x + delta.x)
+            .min(0.0)
+            .max(f32::from(scroll_handle.max_offset().x));
+        if new_x != f32::from(scroll_handle.offset().x) {
+            scroll_handle.set_offset(point(px(new_x), scroll_handle.offset().y));
+            cx.notify();
+        }
+    }
+
+    pub(crate) fn mermaid_end_pan(&mut self, source_offset: usize, cx: &mut Context<Self>) {
+        let was_panning = self
+            .mermaid_views
+            .get_mut(&source_offset)
+            .is_some_and(|view| view.pan_start.take().is_some());
+        if was_panning {
+            cx.notify();
+        }
     }
 
     /// Re-rasterizes a single mermaid diagram at exactly the scale it is

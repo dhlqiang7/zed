@@ -38,6 +38,7 @@ refresh_directory = "Refresh Directory"
 
 # 新建/重命名校验提示 / entry name validation messages
 open_svg_preview = "Open SVG Preview"
+open_mermaid_preview = "Open Mermaid Preview"
 open_file_permalink = "Open File Permalink"
 copy_file_permalink = "Copy File Permalink"
 [project_panel.validation]

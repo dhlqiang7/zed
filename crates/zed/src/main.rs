@@ -799,6 +799,7 @@ fn main() {
         markdown_preview::init(cx);
         tabular_data_preview::init(cx);
         svg_preview::init(cx);
+        mermaid_preview::init(cx);
         office_preview::init(cx);
         sqlite_viewer::init(cx);
         onboarding::init(cx);

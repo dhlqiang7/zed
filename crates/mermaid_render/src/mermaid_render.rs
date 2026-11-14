@@ -66,8 +66,27 @@
 mod postprocess;
 mod render;
 
+use std::sync::OnceLock;
+
 use anyhow::Result;
 use gpui::{Hsla, Rgba};
+use merman::{DetectorRegistry, SourcePresentationConfig};
+
+/// Returns whether `source` is a diagram type that merman can detect (and
+/// thus render). Detection strips directives and comments, then runs the
+/// ordered keyword detectors, so it stays cheap enough to run on every
+/// markdown parse.
+///
+/// This is a dynamic replacement for the previous static prefix allowlist:
+/// diagram families enabled through merman's `all-diagrams` feature set
+/// (sankey, block, architecture, C4, requirement, kanban, radar, and so on)
+/// render without further changes here.
+pub fn is_supported_diagram(source: &str) -> bool {
+    static REGISTRY: OnceLock<DetectorRegistry> = OnceLock::new();
+    let registry = REGISTRY.get_or_init(DetectorRegistry::pinned_mermaid_baseline);
+    let mut config = SourcePresentationConfig::empty_object();
+    registry.detect_type(source, &mut config).is_ok()
+}
 
 #[derive(Debug, Clone, Copy)]
 pub struct AccentColor {

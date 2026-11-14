@@ -38,6 +38,7 @@ refresh_directory = "刷新目录"
 
 # 新建/重命名校验提示 / entry name validation messages
 open_svg_preview = "打开 SVG 预览"
+open_mermaid_preview = "打开 Mermaid 预览"
 open_file_permalink = "打开文件永久链接"
 copy_file_permalink = "复制文件永久链接"
 [project_panel.validation]
