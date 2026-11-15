@@ -11680,7 +11680,9 @@ impl ThreadView {
                 t!("agent_ui.thread_view.tool_name", name = name)
             )
             .into()),
-            (Some(name), false) => Some(format!("Tool: {name}").into()),
+            (Some(name), false) => {
+                Some(t!("agent_ui.thread_view.tool_name", name = name).into())
+            }
             (None, true) => Some(t!("agent_ui.thread_view.interrupted_edit").into()),
             (None, false) => None,
         }

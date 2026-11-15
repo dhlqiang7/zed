@@ -43,7 +43,15 @@ pub enum MermaidPreviewMode {
 /// Wraps raw diagram source in a fenced `mermaid` block, so the preview
 /// reuses the markdown crate's rendering path (theme, zoom, pan, code tab).
 fn mermaid_fenced_source(text: &str) -> SharedString {
-    format!("```mermaid\n{}\n```", text.trim_end()).into()
+    // Use a tilde fence longer than any tilde run in the source, so a
+    // diagram containing ``` or ~~~ cannot break out of the block.
+    let longest_tilde_run = text
+        .lines()
+        .map(|line| line.chars().rev().take_while(|&c| c == '~').count())
+        .max()
+        .unwrap_or(0);
+    let fence = "~".repeat(longest_tilde_run.max(3) + 1);
+    format!("{fence}mermaid\n{}\n{fence}", text.trim_end()).into()
 }
 
 impl MermaidPreviewView {

@@ -75,7 +75,6 @@ pub fn app_menus(cx: &mut App) -> Vec<Menu> {
             t!("app_menus.view.outline_panel"),
             outline_panel::ToggleFocus,
         ),
-        MenuItem::action(t!("app_menus.view.collab_panel"), collab_panel::ToggleFocus),
         MenuItem::action(t!("app_menus.view.terminal_panel"), terminal_panel::Toggle),
         MenuItem::action(
             t!("app_menus.view.debugger_panel"),
