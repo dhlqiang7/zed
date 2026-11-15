@@ -2,8 +2,8 @@ use std::path::Path;
 
 use file_icons::FileIcons;
 use gpui::{
-    App, Context, Entity, EventEmitter, FocusHandle, Focusable, IntoElement, ParentElement,
-    Render, ScrollHandle, SharedString, Styled, Subscription, WeakEntity, Window, div,
+    App, Context, Entity, EventEmitter, FocusHandle, Focusable, IntoElement, ParentElement, Render,
+    ScrollHandle, SharedString, Styled, Subscription, WeakEntity, Window, div,
 };
 use language::{Buffer, BufferEvent};
 use markdown::{
@@ -94,8 +94,7 @@ impl MermaidPreviewView {
                 )
             });
 
-            let theme_subscription =
-                cx.observe_global::<theme::GlobalTheme>(|_, cx| cx.notify());
+            let theme_subscription = cx.observe_global::<theme::GlobalTheme>(|_, cx| cx.notify());
 
             Self {
                 focus_handle: cx.focus_handle(),
@@ -118,10 +117,10 @@ impl MermaidPreviewView {
             &workspace,
             window,
             move |this: &mut MermaidPreviewView,
-                    workspace,
-                    event: &workspace::Event,
-                    window,
-                    cx| {
+                  workspace,
+                  event: &workspace::Event,
+                  window,
+                  cx| {
                 if let workspace::Event::ActiveItemChanged = event {
                     let workspace = workspace.read(cx);
                     if let Some(active_item) = workspace.active_item(cx)
@@ -325,8 +324,13 @@ impl MermaidPreviewView {
 
         workspace.register_action(move |workspace, _: &OpenFollowingPreview, window, cx| {
             if let Some(editor) = Self::resolve_active_item_as_mermaid_buffer(workspace, cx) {
-                let view =
-                    Self::create_preview_view(MermaidPreviewMode::Follow, workspace, editor, window, cx);
+                let view = Self::create_preview_view(
+                    MermaidPreviewMode::Follow,
+                    workspace,
+                    editor,
+                    window,
+                    cx,
+                );
                 workspace.active_pane().update(cx, |pane, cx| {
                     pane.add_item(Box::new(view), true, true, None, window, cx)
                 });

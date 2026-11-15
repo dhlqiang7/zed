@@ -757,7 +757,11 @@ fn mermaid_scroll_container(
         .w_full()
         .overflow_x_scroll()
         .track_scroll(scroll_handle)
-        .on_scroll(on_mermaid_zoom_scroll(markdown.clone(), source_offset, on_zoom))
+        .on_scroll(on_mermaid_zoom_scroll(
+            markdown.clone(),
+            source_offset,
+            on_zoom,
+        ))
         .on_mouse_down(
             MouseButton::Left,
             on_mermaid_pan_start(markdown.clone(), source_offset, scroll_handle),

@@ -2920,7 +2920,9 @@ impl Render for ConfigurationView {
             .and_then(|s| s.authentication_method.clone());
 
         if self.load_credentials_task.is_some() {
-            return div().child(Label::new(t!("language_models.bedrock.status_loading"))).into_any();
+            return div()
+                .child(Label::new(t!("language_models.bedrock.status_loading")))
+                .into_any();
         }
 
         let configured_label = match &auth {
@@ -2928,10 +2930,16 @@ impl Render for ConfigurationView {
                 t!("language_models.bedrock.status_using_automatic").to_string()
             }
             Some(BedrockAuth::NamedProfile { profile_name }) => {
-                t!("language_models.bedrock.status_using_profile", profile = profile_name)
+                t!(
+                    "language_models.bedrock.status_using_profile",
+                    profile = profile_name
+                )
             }
             Some(BedrockAuth::SingleSignOn { profile_name }) => {
-                t!("language_models.bedrock.status_using_sso_profile", profile = profile_name)
+                t!(
+                    "language_models.bedrock.status_using_sso_profile",
+                    profile = profile_name
+                )
             }
             Some(BedrockAuth::IamCredentials { .. }) if env_var_set => {
                 t!(
@@ -2940,14 +2948,18 @@ impl Render for ConfigurationView {
                     secret_var = ZED_BEDROCK_SECRET_ACCESS_KEY_VAR.name
                 )
             }
-            Some(BedrockAuth::IamCredentials { .. }) => t!("language_models.bedrock.status_using_iam").to_string(),
+            Some(BedrockAuth::IamCredentials { .. }) => {
+                t!("language_models.bedrock.status_using_iam").to_string()
+            }
             Some(BedrockAuth::ApiKey { .. }) if env_var_set => {
                 t!(
                     "language_models.bedrock.status_using_api_key_from_env",
                     var = ZED_BEDROCK_BEARER_TOKEN_VAR.name
                 )
             }
-            Some(BedrockAuth::ApiKey { .. }) => t!("language_models.bedrock.status_using_api_key").to_string(),
+            Some(BedrockAuth::ApiKey { .. }) => {
+                t!("language_models.bedrock.status_using_api_key").to_string()
+            }
             None => t!("language_models.bedrock.status_not_authenticated").to_string(),
         };
 
@@ -2969,9 +2981,7 @@ impl Render for ConfigurationView {
                 d = ZED_BEDROCK_BEARER_TOKEN_VAR.name
             ))
         } else if is_settings_derived {
-            Some(
-                t!("language_models.bedrock.status_auth_configured_notice").to_string(),
-            )
+            Some(t!("language_models.bedrock.status_auth_configured_notice").to_string())
         } else {
             None
         };

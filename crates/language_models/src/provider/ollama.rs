@@ -866,7 +866,8 @@ impl ConfigurationView {
                     .child(
                         ListBulletItem::new("")
                             .child(
-                                Label::new(t!("language_models.ollama.download_and_install_from")).color(Color::Muted),
+                                Label::new(t!("language_models.ollama.download_and_install_from"))
+                                    .color(Color::Muted),
                             )
                             .child(ButtonLink::new("ollama.com", "https://ollama.com/download")),
                     )
@@ -996,15 +997,13 @@ impl ConfigurationView {
                 )
                 .child(
                     Button::new(
-                    "reset-api-url",
-                    t!("language_models.provider.reset_api_url"),
-                )
-                        .style(ButtonStyle::Outlined)
-                        .label_size(LabelSize::Small)
-                        .start_icon(Icon::new(IconName::Undo).size(IconSize::Small))
-                        .on_click(
-                            cx.listener(|this, _, window, cx| this.reset_api_url(window, cx)),
-                        ),
+                        "reset-api-url",
+                        t!("language_models.provider.reset_api_url"),
+                    )
+                    .style(ButtonStyle::Outlined)
+                    .label_size(LabelSize::Small)
+                    .start_icon(Icon::new(IconName::Undo).size(IconSize::Small))
+                    .on_click(cx.listener(|this, _, window, cx| this.reset_api_url(window, cx))),
                 )
         } else {
             v_flex()
@@ -1057,36 +1056,34 @@ impl Render for ConfigurationView {
                                 } else {
                                     this.child(
                                         Button::new(
-                        "download_ollama_button",
-                        t!("language_models.ollama.download"),
-                    )
-                                            .style(ButtonStyle::OutlinedGhost)
-                                            .size(ButtonSize::Medium)
-                                            .end_icon(
-                                                Icon::new(IconName::ArrowUpRight)
-                                                    .size(IconSize::XSmall)
-                                                    .color(Color::Muted),
-                                            )
-                                            .on_click(move |_, _, cx| {
-                                                cx.open_url(OLLAMA_DOWNLOAD_URL)
-                                            })
-                                            .into_any_element(),
+                                            "download_ollama_button",
+                                            t!("language_models.ollama.download"),
+                                        )
+                                        .style(ButtonStyle::OutlinedGhost)
+                                        .size(ButtonSize::Medium)
+                                        .end_icon(
+                                            Icon::new(IconName::ArrowUpRight)
+                                                .size(IconSize::XSmall)
+                                                .color(Color::Muted),
+                                        )
+                                        .on_click(move |_, _, cx| cx.open_url(OLLAMA_DOWNLOAD_URL))
+                                        .into_any_element(),
                                     )
                                 }
                             })
                             .child(
                                 Button::new(
-                        "view-models",
-                        t!("language_models.ollama.view_all_models"),
-                    )
-                                    .style(ButtonStyle::OutlinedGhost)
-                                    .size(ButtonSize::Medium)
-                                    .end_icon(
-                                        Icon::new(IconName::ArrowUpRight)
-                                            .size(IconSize::XSmall)
-                                            .color(Color::Muted),
-                                    )
-                                    .on_click(move |_, _, cx| cx.open_url(OLLAMA_LIBRARY_URL)),
+                                    "view-models",
+                                    t!("language_models.ollama.view_all_models"),
+                                )
+                                .style(ButtonStyle::OutlinedGhost)
+                                .size(ButtonSize::Medium)
+                                .end_icon(
+                                    Icon::new(IconName::ArrowUpRight)
+                                        .size(IconSize::XSmall)
+                                        .color(Color::Muted),
+                                )
+                                .on_click(move |_, _, cx| cx.open_url(OLLAMA_LIBRARY_URL)),
                             ),
                     )
                     .map(|this| {
@@ -1098,12 +1095,16 @@ impl Render for ConfigurationView {
                                         h_flex()
                                             .gap_1()
                                             .child(Icon::new(IconName::Check).color(Color::Success))
-                                            .child(Label::new(t!("language_models.provider.connected"))),
+                                            .child(Label::new(t!(
+                                                "language_models.provider.connected"
+                                            ))),
                                     )
                                     .child(
                                         IconButton::new("refresh-models", IconName::RotateCcw)
                                             .icon_size(IconSize::Small)
-                                            .tooltip(Tooltip::text(t!("language_models.provider.refresh_models")))
+                                            .tooltip(Tooltip::text(t!(
+                                                "language_models.provider.refresh_models"
+                                            )))
                                             .on_click(cx.listener(|this, _, window, cx| {
                                                 this.state.update(cx, |state, _| {
                                                     state.fetched_models.clear();
@@ -1118,14 +1119,14 @@ impl Render for ConfigurationView {
                                     "retry_ollama_models",
                                     t!("language_models.provider.connect"),
                                 )
-                                    .style(ButtonStyle::Outlined)
-                                    .size(ButtonSize::Medium)
-                                    .start_icon(
-                                        Icon::new(IconName::PlayOutlined).size(IconSize::XSmall),
-                                    )
-                                    .on_click(cx.listener(move |this, _, window, cx| {
-                                        this.retry_connection(window, cx)
-                                    })),
+                                .style(ButtonStyle::Outlined)
+                                .size(ButtonSize::Medium)
+                                .start_icon(
+                                    Icon::new(IconName::PlayOutlined).size(IconSize::XSmall),
+                                )
+                                .on_click(cx.listener(
+                                    move |this, _, window, cx| this.retry_connection(window, cx),
+                                )),
                             )
                         }
                     }),

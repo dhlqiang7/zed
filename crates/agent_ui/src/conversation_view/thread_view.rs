@@ -1487,7 +1487,10 @@ impl ThreadView {
         cx: &mut App,
     ) -> Task<Result<(Vec<acp_v2::ContentBlock>, Vec<Entity<Buffer>>)>> {
         if message_editor.read(cx).editor().read(cx).read_only(cx) {
-            return Task::ready(Err(anyhow!("{}", t!("agent_ui.thread_view.error_draft_unsupported"))));
+            return Task::ready(Err(anyhow!(
+                "{}",
+                t!("agent_ui.thread_view.error_draft_unsupported")
+            )));
         }
         let expand = self.as_native_thread(cx).is_some_and(|thread| {
             let thread = thread.read(cx);
@@ -2725,9 +2728,11 @@ impl ThreadView {
                     None,
                     t!("agent_ui.thread_view.error_max_output_length").into(),
                 ),
-                ThreadError::NoModelSelected => {
-                    ("no_model_selected", None, t!("agent_ui.thread_view.error_no_model_selected").into())
-                }
+                ThreadError::NoModelSelected => (
+                    "no_model_selected",
+                    None,
+                    t!("agent_ui.thread_view.error_no_model_selected").into(),
+                ),
                 ThreadError::ApiError { provider } => (
                     "api_error",
                     None,
@@ -3226,7 +3231,10 @@ impl ThreadView {
     ) -> bool {
         if self.message_editor.read(cx).editor().read(cx).read_only(cx) {
             self.handle_thread_error(
-                anyhow!("{}", t!("agent_ui.thread_view.error_discard_unsupported_queued")),
+                anyhow!(
+                    "{}",
+                    t!("agent_ui.thread_view.error_discard_unsupported_queued")
+                ),
                 cx,
             );
             return false;
@@ -5553,15 +5561,15 @@ impl ThreadView {
                         "discard-protected-draft",
                         t!("agent_ui.thread_view.discard_draft"),
                     )
-                        .label_size(LabelSize::Small)
-                        .on_click(cx.listener(|this, _, window, cx| {
-                            this._draft_resolve_task.take();
-                            this.message_editor.update(cx, |editor, cx| {
-                                editor.set_read_only(false, cx);
-                                editor.set_message(Vec::new(), window, cx);
-                            });
-                            this.clear_thread_error(cx);
-                        })),
+                    .label_size(LabelSize::Small)
+                    .on_click(cx.listener(|this, _, window, cx| {
+                        this._draft_resolve_task.take();
+                        this.message_editor.update(cx, |editor, cx| {
+                            editor.set_read_only(false, cx);
+                            editor.set_message(Vec::new(), window, cx);
+                        });
+                        this.clear_thread_error(cx);
+                    })),
                 )
         });
 
@@ -5674,40 +5682,39 @@ impl ThreadView {
 
     fn render_activity_status_label(&self, cx: &Context<Self>) -> Option<impl IntoElement> {
         let thread = self.thread.read(cx);
-        let (id, label, tooltip): (_, SharedString, SharedString) = match thread
-            .foreground_activity()
-        {
-            ForegroundActivity::Unconfirmed => (
-                "activity-unconfirmed",
-                t!("agent_ui.thread_view.activity_unconfirmed").into(),
-                t!("agent_ui.thread_view.activity_unconfirmed_tooltip").into(),
-            ),
-            ForegroundActivity::Unknown => (
-                "activity-unknown",
-                t!("agent_ui.thread_view.activity_unknown").into(),
-                t!("agent_ui.thread_view.activity_unknown_tooltip").into(),
-            ),
-            ForegroundActivity::Idle => {
-                let background_count = thread.background_work().map_or(0, <[_]>::len);
-                if background_count == 0 {
-                    return None;
+        let (id, label, tooltip): (_, SharedString, SharedString) =
+            match thread.foreground_activity() {
+                ForegroundActivity::Unconfirmed => (
+                    "activity-unconfirmed",
+                    t!("agent_ui.thread_view.activity_unconfirmed").into(),
+                    t!("agent_ui.thread_view.activity_unconfirmed_tooltip").into(),
+                ),
+                ForegroundActivity::Unknown => (
+                    "activity-unknown",
+                    t!("agent_ui.thread_view.activity_unknown").into(),
+                    t!("agent_ui.thread_view.activity_unknown_tooltip").into(),
+                ),
+                ForegroundActivity::Idle => {
+                    let background_count = thread.background_work().map_or(0, <[_]>::len);
+                    if background_count == 0 {
+                        return None;
+                    }
+                    (
+                        "activity-background",
+                        if background_count == 1 {
+                            t!("agent_ui.thread_view.background_task_singular").into()
+                        } else {
+                            t!(
+                                "agent_ui.thread_view.background_tasks_count",
+                                count = background_count
+                            )
+                            .into()
+                        },
+                        t!("agent_ui.thread_view.background_tasks_notice").into(),
+                    )
                 }
-                (
-                    "activity-background",
-                    if background_count == 1 {
-                        t!("agent_ui.thread_view.background_task_singular").into()
-                    } else {
-                        t!(
-                            "agent_ui.thread_view.background_tasks_count",
-                            count = background_count
-                        )
-                        .into()
-                    },
-                    t!("agent_ui.thread_view.background_tasks_notice").into(),
-                )
-            }
-            ForegroundActivity::Running | ForegroundActivity::RequiresAction => return None,
-        };
+                ForegroundActivity::Running | ForegroundActivity::RequiresAction => return None,
+            };
         Some(
             div()
                 .id(id)
@@ -11674,15 +11681,15 @@ impl ThreadView {
     ) -> Option<SharedString> {
         let tool_name = tool_name.filter(|name| !name.trim().is_empty());
         match (tool_name, interrupted_edit) {
-            (Some(name), true) => Some(format!(
-                "{}\n{}",
-                t!("agent_ui.thread_view.interrupted_edit"),
-                t!("agent_ui.thread_view.tool_name", name = name)
-            )
-            .into()),
-            (Some(name), false) => {
-                Some(t!("agent_ui.thread_view.tool_name", name = name).into())
-            }
+            (Some(name), true) => Some(
+                format!(
+                    "{}\n{}",
+                    t!("agent_ui.thread_view.interrupted_edit"),
+                    t!("agent_ui.thread_view.tool_name", name = name)
+                )
+                .into(),
+            ),
+            (Some(name), false) => Some(t!("agent_ui.thread_view.tool_name", name = name).into()),
             (None, true) => Some(t!("agent_ui.thread_view.interrupted_edit").into()),
             (None, false) => None,
         }
@@ -11974,9 +11981,11 @@ impl ThreadView {
                             )
                             .when(file.hunks.is_empty(), |this| {
                                 this.child(
-                                    Label::new(t!("agent_ui.thread_view.no_text_preview_available"))
-                                        .size(LabelSize::XSmall)
-                                        .color(Color::Muted),
+                                    Label::new(t!(
+                                        "agent_ui.thread_view.no_text_preview_available"
+                                    ))
+                                    .size(LabelSize::XSmall)
+                                    .color(Color::Muted),
                                 )
                             })
                             .children(file.hunks.iter().map(|hunk| {
@@ -13266,7 +13275,10 @@ impl ThreadView {
                             || this.message_editor.read(cx).editor().read(cx).read_only(cx)
                         {
                             this.handle_thread_error(
-                                anyhow!("{}", t!("agent_ui.thread_view.error_saved_not_restorable")),
+                                anyhow!(
+                                    "{}",
+                                    t!("agent_ui.thread_view.error_saved_not_restorable")
+                                ),
                                 cx,
                             );
                             return;

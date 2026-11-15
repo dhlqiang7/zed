@@ -1404,7 +1404,10 @@ impl Editor {
                                     .child(self.render_edit_prediction_popover_keystroke(
                                         keystroke, key_color, cx,
                                     ))
-                                    .child(Label::new(t!("editor.edit_prediction.preview")).into_any_element())
+                                    .child(
+                                        Label::new(t!("editor.edit_prediction.preview"))
+                                            .into_any_element(),
+                                    )
                                     .opacity(if has_completion { 1.0 } else { 0.4 }),
                             )
                         } else {
@@ -1808,7 +1811,12 @@ impl Editor {
         cx: &mut App,
     ) -> Option<(AnyElement, gpui::Point<Pixels>)> {
         let mut element = self
-            .render_edit_prediction_line_popover(t!("editor.edit_prediction.scroll"), Some(scroll_icon), window, cx)
+            .render_edit_prediction_line_popover(
+                t!("editor.edit_prediction.scroll"),
+                Some(scroll_icon),
+                window,
+                cx,
+            )
             .into_any();
 
         let size = element.layout_as_root(AvailableSpace::min_size(), window, cx);
@@ -2453,7 +2461,10 @@ impl Editor {
                         .gap_2()
                         .flex_1()
                         .child(Icon::new(icons.base))
-                        .child(Label::new(t!("editor.edit_prediction.jump_to_file", file = file_name))),
+                        .child(Label::new(t!(
+                            "editor.edit_prediction.jump_to_file",
+                            file = file_name
+                        ))),
                 )
             }
             EditPrediction::Edit {

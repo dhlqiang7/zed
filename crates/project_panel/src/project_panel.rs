@@ -34,6 +34,7 @@ use itertools::Itertools;
 use language::DiagnosticSeverity;
 use markdown_preview::markdown_preview_view::MarkdownPreviewView;
 use menu::{Confirm, SelectFirst, SelectLast, SelectNext, SelectPrevious};
+use mermaid_preview::mermaid_preview_view::MermaidPreviewView;
 use notifications::status_toast::StatusToast;
 use project::{
     Entry, EntryKind, Fs, GitEntry, GitEntryRef, GitTraversal, Project, ProjectEntryId,
@@ -60,7 +61,6 @@ use std::{
     sync::Arc,
     time::{Duration, Instant},
 };
-use mermaid_preview::mermaid_preview_view::MermaidPreviewView;
 use svg_preview::svg_preview_view::SvgPreviewView;
 use theme_settings::ThemeSettings;
 use ui::{
