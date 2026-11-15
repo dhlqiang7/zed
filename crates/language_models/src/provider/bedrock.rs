@@ -800,7 +800,7 @@ impl LanguageModelProvider for BedrockLanguageModelProvider {
                     .into()
             })
             .description(InlineDescription::Text(
-                "To use Zed's agent with Bedrock, set a custom authentication strategy in your settings or use static credentials. Mantle-only models (e.g. GPT-5.5, GPT-5.4, Grok 4.3) additionally require IAM permissions for the `bedrock-mantle` endpoint.".into(),
+                t!("language_models.bedrock.settings_description").into(),
             )),
         ))
     }
@@ -3098,10 +3098,8 @@ impl ConfigurationView {
             .child(Divider::horizontal())
             .child(Label::new(t!("language_models.bedrock.static_credentials")).mt_2())
             .child(
-                Label::new(
-                    t!("language_models.bedrock.static_credentials_description"),
-                )
-                .color(Color::Muted),
+                Label::new(t!("language_models.bedrock.static_credentials_description"))
+                    .color(Color::Muted),
             )
             .child(list_item)
             .child(
@@ -3112,22 +3110,22 @@ impl ConfigurationView {
                     .child(self.session_token_editor.clone()),
             )
             .child(
-                Label::new(format!(
-                    "You can also set the {}, {} and {} environment variables (or {} for Bedrock API Key authentication) and restart Zed.",
-                    ZED_BEDROCK_ACCESS_KEY_ID_VAR.name,
-                    ZED_BEDROCK_SECRET_ACCESS_KEY_VAR.name,
-                    ZED_BEDROCK_REGION_VAR.name,
-                    ZED_BEDROCK_BEARER_TOKEN_VAR.name
+                Label::new(t!(
+                    "language_models.bedrock.env_vars_note",
+                    a = ZED_BEDROCK_ACCESS_KEY_ID_VAR.name,
+                    b = ZED_BEDROCK_SECRET_ACCESS_KEY_VAR.name,
+                    c = ZED_BEDROCK_REGION_VAR.name,
+                    d = ZED_BEDROCK_BEARER_TOKEN_VAR.name
                 ))
                 .size(LabelSize::Small)
                 .color(Color::Muted),
             )
             .child(
-                Label::new(format!(
-                    "Optionally, if your environment uses AWS CLI profiles, you can set {}; if it requires a custom endpoint, you can set {}; and if it requires a Session Token, you can set {}.",
-                    ZED_AWS_PROFILE_VAR.name,
-                    ZED_AWS_ENDPOINT_VAR.name,
-                    ZED_BEDROCK_SESSION_TOKEN_VAR.name
+                Label::new(t!(
+                    "language_models.bedrock.aws_profile_note",
+                    profile = ZED_AWS_PROFILE_VAR.name,
+                    endpoint = ZED_AWS_ENDPOINT_VAR.name,
+                    token = ZED_BEDROCK_SESSION_TOKEN_VAR.name
                 ))
                 .size(LabelSize::Small)
                 .color(Color::Muted)
@@ -3135,7 +3133,11 @@ impl ConfigurationView {
                 .mb_2p5(),
             )
             .child(Divider::horizontal())
-            .child(Label::new(t!("language_models.bedrock.using_the_api_key")).mt_2().mb_1())
+            .child(
+                Label::new(t!("language_models.bedrock.using_the_api_key"))
+                    .mt_2()
+                    .mb_1(),
+            )
             .child(self.bearer_token_editor.clone())
             .child(
                 Label::new(t!(
@@ -3143,7 +3145,7 @@ impl ConfigurationView {
                     var = ZED_BEDROCK_REGION_VAR.name
                 ))
                 .size(LabelSize::Small)
-                .color(Color::Muted)
+                .color(Color::Muted),
             )
     }
 }

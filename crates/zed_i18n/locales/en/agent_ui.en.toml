@@ -293,6 +293,7 @@ placeholder = "Message %{agent} — @ to include context"
 
 [agent_ui.elicitation]
 destination = "Destination"
+url_idn_warning = "This internationalized address displays as %{host}. Verify it carefully."
 waiting_for_input = "Waiting for input"
 waiting_for_completion = "Waiting for completion"
 submitted = "Submitted"

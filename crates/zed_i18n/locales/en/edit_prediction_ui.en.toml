@@ -30,7 +30,7 @@ powered_by_mercury = "Powered by Mercury"
 powered_by_zeta = "Powered by Zeta"
 choose_plan = "Choose a Plan"
 ollama_model_not_configured = "Ollama model not configured — configure a model before use"
-powered_by_ollama = "Powered by Ollama ({})"
+powered_by_ollama = "Powered by Ollama (%{model})"
 
 [edit_prediction_ui.rate_prediction_modal]
 bad_prediction = "Bad Prediction"

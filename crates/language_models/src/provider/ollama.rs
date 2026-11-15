@@ -860,7 +860,7 @@ impl ConfigurationView {
                 )
                 .color(Color::Muted),
             )
-            .child(Label::new("To use local Ollama:").color(Color::Muted))
+            .child(Label::new(t!("language_models.ollama.intro")).color(Color::Muted))
             .child(
                 List::new()
                     .child(
@@ -950,7 +950,7 @@ impl ConfigurationView {
                         ))),
                 )
                 .child(
-                    Button::new("reset-context-window", "Reset")
+                    Button::new("reset-context-window", t!("language_models.provider.reset"))
                         .style(ButtonStyle::Outlined)
                         .label_size(LabelSize::Small)
                         .start_icon(Icon::new(IconName::Undo).size(IconSize::Small))
@@ -970,7 +970,7 @@ impl ConfigurationView {
                 .child(self.context_window_editor.clone())
                 .gap_1p5()
                 .child(
-                    Label::new("Default: Model specific")
+                    Label::new(t!("language_models.provider.context_window_default_model"))
                         .size(LabelSize::Small)
                         .color(Color::Muted),
                 )

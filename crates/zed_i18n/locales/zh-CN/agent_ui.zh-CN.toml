@@ -292,7 +292,8 @@ placeholder_with_commands = "向 %{agent} 发送消息 — @ 添加上下文，/
 placeholder = "向 %{agent} 发送消息 — @ 添加上下文"
 
 [agent_ui.elicitation]
-destination = "目的地"
+destination = "目标站点"
+url_idn_warning = "此国际化地址显示为 %{host}。请仔细核对。"
 waiting_for_input = "等待输入"
 waiting_for_completion = "等待完成"
 submitted = "已提交"
@@ -358,7 +359,7 @@ background_tasks_notice = "智能体已完成回复，但它启动的部分工�
 error_draft_unsupported = "此草稿包含不支持的内容，无法编辑或发送。请放弃草稿以撰写新消息。"
 error_saved_unsupported = "此已保存的提交包含不支持的内容，无法恢复。原始提交已保留。"
 error_saved_not_restorable = "此已保存的提交无法恢复到输入框。原始提交与草稿均已保留。"
-error_free_usage_limit = "已达到免费使用额度。升级到 Zed Pro 可获得更多对话。"
+error_free_usage_limit = "已达到免费用量上限。升级到 Zed Pro 可获得更多提问次数。"
 error_context_too_large = "上下文超出模型的上下文窗口。"
 error_max_output_length = "模型已达到最大输出长度。"
 error_no_model_selected = "未选择模型。"

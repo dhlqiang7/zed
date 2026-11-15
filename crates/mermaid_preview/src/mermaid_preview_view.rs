@@ -1,9 +1,10 @@
 use std::path::Path;
+use std::time::Duration;
 
 use file_icons::FileIcons;
 use gpui::{
     App, Context, Entity, EventEmitter, FocusHandle, Focusable, IntoElement, ParentElement, Render,
-    ScrollHandle, SharedString, Styled, Subscription, WeakEntity, Window, div,
+    ScrollHandle, SharedString, Styled, Subscription, Task, WeakEntity, Window, div,
 };
 use language::{Buffer, BufferEvent};
 use markdown::{
@@ -20,6 +21,10 @@ use zed_i18n::t;
 
 use crate::{OpenFollowingPreview, OpenPreview, OpenPreviewToTheSide};
 
+/// How long typing must pause before an edited buffer re-parses the diagram;
+/// every keystroke would otherwise run a full mermaid layout and raster.
+const MERMAID_PREVIEW_REPARSE_DEBOUNCE: Duration = Duration::from_millis(200);
+
 pub struct MermaidPreviewView {
     focus_handle: FocusHandle,
     buffer: Option<Entity<Buffer>>,
@@ -27,6 +32,8 @@ pub struct MermaidPreviewView {
     /// Keeps the vertical scroll position across re-renders; without a
     /// tracked handle gpui's per-frame scroll state resets on every notify.
     scroll_handle: ScrollHandle,
+    /// The pending debounced re-parse scheduled by the last buffer edit.
+    pending_update: Option<Task<()>>,
     _buffer_subscription: Option<Subscription>,
     _workspace_subscription: Option<Subscription>,
     _theme_subscription: Subscription,
@@ -51,7 +58,11 @@ fn mermaid_fenced_source(text: &str) -> SharedString {
         .max()
         .unwrap_or(0);
     let fence = "~".repeat(longest_tilde_run.max(3) + 1);
-    format!("{fence}mermaid\n{}\n{fence}", text.trim_end()).into()
+    format!(
+        "{fence}mermaid\n{}\n{fence}",
+        text.trim_end().trim_start_matches('\u{FEFF}')
+    )
+    .into()
 }
 
 impl MermaidPreviewView {
@@ -101,6 +112,7 @@ impl MermaidPreviewView {
                 buffer,
                 markdown,
                 scroll_handle: ScrollHandle::new(),
+                pending_update: None,
                 _buffer_subscription: subscription,
                 _workspace_subscription: workspace_subscription,
                 _theme_subscription: theme_subscription,
@@ -140,6 +152,9 @@ impl MermaidPreviewView {
                     } else if this.buffer.take().is_some() {
                         // The active item is not a Mermaid file: clear the
                         // preview rather than leaving the last diagram stale.
+                        // Drop the buffer subscription too, so edits to the
+                        // old buffer in another tab can't resurrect it.
+                        this._buffer_subscription = None;
                         this.markdown.update(cx, |markdown, cx| {
                             markdown.reset(SharedString::default(), cx);
                         });
@@ -158,8 +173,30 @@ impl MermaidPreviewView {
         cx.subscribe_in(
             buffer,
             window,
-            move |this, buffer, event: &BufferEvent, _window, cx| match event {
-                BufferEvent::Edited { .. } | BufferEvent::Saved => {
+            move |this, buffer, event: &BufferEvent, window, cx| match event {
+                BufferEvent::Edited { .. } => {
+                    // Debounce: every keystroke would otherwise run a full
+                    // mermaid layout and raster. Wait for a pause in typing,
+                    // like the markdown preview does.
+                    if this.pending_update.is_some() {
+                        return;
+                    }
+                    let buffer = buffer.clone();
+                    this.pending_update = Some(cx.spawn_in(window, async move |this, cx| {
+                        cx.background_executor()
+                            .timer(MERMAID_PREVIEW_REPARSE_DEBOUNCE)
+                            .await;
+                        this.update_in(cx, |this, _window, cx| {
+                            this.pending_update = None;
+                            if this.buffer.as_ref() == Some(&buffer) {
+                                this.set_markdown_source(&buffer, cx);
+                            }
+                        })
+                        .ok();
+                    }));
+                }
+                BufferEvent::Saved => {
+                    this.pending_update = None;
                     this.set_markdown_source(buffer, cx);
                 }
                 _ => {}

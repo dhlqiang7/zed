@@ -2379,8 +2379,9 @@ impl<'a> ElicitationCard<'a> {
                                                 .color(Color::Warning),
                                         )
                                         .child(
-                                            Label::new(format!(
-                                                "This internationalized address displays as {decoded_host}. Verify it carefully."
+                                            Label::new(t!(
+                                                "agent_ui.elicitation.url_idn_warning",
+                                                host = decoded_host
                                             ))
                                             .size(LabelSize::Small)
                                             .color(Color::Warning),

@@ -35,9 +35,13 @@ connect = "Connect"
 refresh_models = "Refresh Models"
 api_key_configured = "API key configured"
 reset_api_url = "Reset API URL"
+reset = "Reset"
+context_window_default_model = "Default: Model specific"
+context_window_default_server = "Default: Discovered from the server"
 
 [language_models.ollama]
 description = "Run local models on your machine with Ollama."
+intro = "To use local Ollama:"
 download_and_install_from = "Download and install Ollama from"
 start_and_download = "Start Ollama and download a model:"
 click_connect = "Click 'Connect' below to start using Ollama in Zed"
@@ -46,6 +50,8 @@ view_all_models = "View All Models"
 
 [language_models.llama_cpp]
 description = "Run local models on your machine with LlamaCpp."
+intro = "To use a local llama.cpp server:"
+start_router_mode = "Start the server in router mode:"
 install_from = "Install llama.cpp from"
 click_connect = "Click 'Connect' below to start using llama.cpp in Zed"
 open_webui = "Open WebUI"
@@ -53,6 +59,9 @@ get = "Get llama.cpp"
 browse_gguf_models = "Browse GGUF Models"
 
 [language_models.bedrock]
+settings_description = "To use Zed's agent with Bedrock, set a custom authentication strategy in your settings or use static credentials. Mantle-only models (e.g. GPT-5.5, GPT-5.4, Grok 4.3) additionally require IAM permissions for the `bedrock-mantle` endpoint."
+env_vars_note = "You can also set the %{a}, %{b} and %{c} environment variables (or %{d} for Bedrock API Key authentication) and restart Zed."
+aws_profile_note = "Optionally, if your environment uses AWS CLI profiles, you can set %{profile}; if it requires a custom endpoint, you can set %{endpoint}; and if it requires a Session Token, you can set %{token}."
 form_access_key_id = "Access Key ID"
 form_secret_access_key = "Secret Access Key"
 form_session_token = "Session Token (Optional)"

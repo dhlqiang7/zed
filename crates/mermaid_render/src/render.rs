@@ -21,9 +21,10 @@ pub(super) fn render_mermaid(source: &str, theme: &MermaidTheme) -> Result<Strin
     let pipeline = merman::svg::SvgPipeline::resvg_safe()
         .with_postprocessor(merman::svg::CssOverridePostprocessor::strip_existing_important());
 
-    // The default `SvgEnvironment` is deterministic, which vendored text
-    // measurement in older merman versions provided; the diagram id scopes
-    // marker ids and styles when multiple SVGs share a document.
+    // merman 0.10 removed the vendored text measurer; the deterministic
+    // environment is its built-in replacement, so the defaults are used. The
+    // diagram id scopes marker ids and styles when multiple SVGs share a
+    // document.
     let request = merman::RenderRequest::svg(
         source,
         merman::OperationControl::new(),

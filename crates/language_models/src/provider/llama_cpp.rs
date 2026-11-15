@@ -1198,7 +1198,7 @@ impl ConfigurationView {
                 )
                 .color(Color::Muted),
             )
-            .child(Label::new("To use a local llama.cpp server:").color(Color::Muted))
+            .child(Label::new(t!("language_models.llama_cpp.intro")).color(Color::Muted))
             .child(
                 List::new()
                     .child(
@@ -1212,7 +1212,8 @@ impl ConfigurationView {
                     .child(
                         ListBulletItem::new("")
                             .child(
-                                Label::new("Start the server in router mode:").color(Color::Muted),
+                                Label::new(t!("language_models.llama_cpp.start_router_mode"))
+                                    .color(Color::Muted),
                             )
                             .child(Label::new("llama serve").inline_code(cx)),
                     )
@@ -1289,7 +1290,7 @@ impl ConfigurationView {
                         ))),
                 )
                 .child(
-                    Button::new("reset-context-window", "Reset")
+                    Button::new("reset-context-window", t!("language_models.provider.reset"))
                         .style(ButtonStyle::Outlined)
                         .label_size(LabelSize::Small)
                         .start_icon(Icon::new(IconName::Undo).size(IconSize::Small))
@@ -1309,7 +1310,7 @@ impl ConfigurationView {
                 .child(self.context_window_editor.clone())
                 .gap_1p5()
                 .child(
-                    Label::new("Default: Discovered from the server")
+                    Label::new(t!("language_models.provider.context_window_default_server"))
                         .size(LabelSize::Small)
                         .color(Color::Muted),
                 )
