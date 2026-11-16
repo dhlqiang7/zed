@@ -8,6 +8,7 @@ use gpui::{
 use std::collections::BTreeMap;
 use std::ops::Range;
 use std::path::Path;
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Arc, OnceLock};
 use std::time::Duration;
 use ui::{CopyButton, ScrollAxes, Scrollbars, TintColor, Tooltip, WithScrollbar, prelude::*};
@@ -61,8 +62,11 @@ struct CachedMermaidDiagram {
     /// logical size as the raster that will replace it.
     fallback_image: Option<(Arc<RenderImage>, f32)>,
     /// The scale, relative to the diagram's natural size, that `render_image`
-    /// was (or is being) rasterized at.
-    rasterized_scale: f32,
+    /// was (or is being) rasterized at, in zoom units (the fence scale from
+    /// the info string is already divided out). Stored atomically because the
+    /// initial render discovers the effective scale only after parsing the
+    /// SVG, inside its background task.
+    rasterized_scale: Arc<AtomicU32>,
     _task: Task<()>,
 }
 
@@ -91,7 +95,7 @@ impl MermaidState {
                     .render_image
                     .get()
                     .and_then(|result| result.as_ref().ok().cloned())
-                    .map(|image| (image, old_cached.rasterized_scale))
+                    .map(|image| (image, old_cached.rasterized()))
                     .or_else(|| old_cached.fallback_image.clone())
             })
         })
@@ -161,7 +165,7 @@ impl MermaidState {
             .render_image
             .get()
             .and_then(|result| result.as_ref().ok())
-            .map(|image| (image.clone(), cached.rasterized_scale))
+            .map(|image| (image.clone(), cached.rasterized()))
             .or_else(|| cached.fallback_image.clone())?;
         Some(mermaid_base_size(&image, rasterized_scale))
     }
@@ -184,7 +188,7 @@ impl MermaidState {
             return;
         };
         let target_scale = zoom;
-        if (cached.rasterized_scale - target_scale).abs() < 0.001 {
+        if (cached.rasterized() - target_scale).abs() < 0.001 {
             return;
         }
         // The old render image lives on as the new entry's fallback, so it
@@ -200,22 +204,54 @@ impl MermaidState {
                 if let Some((old_fallback, _)) = cached.fallback_image.clone() {
                     cx.drop_image(old_fallback, None);
                 }
-                Some((image.clone(), cached.rasterized_scale))
+                Some((image.clone(), cached.rasterized()))
             }
             None => cached.fallback_image.clone(),
         };
-        let scale_factor = contents.scale as f32 / 100.0 * target_scale;
+        // Clamp the rasterization request to what the GPU texture cap can
+        // actually produce: gpui silently clamps oversized rasters, which
+        // would otherwise shrink the recovered natural size (the diagram
+        // visibly snapped back after zooming in finished).
+        let fence = contents.scale as f32 / 100.0;
+        let scale_factor = effective_raster_scale(&parsed_svg, fence * target_scale);
+        let recorded_scale = if fence > 0.0 {
+            scale_factor / fence
+        } else {
+            target_scale
+        };
         *cached = Arc::new(CachedMermaidDiagram::new_from_parsed(
             parsed_svg,
             scale_factor,
-            target_scale,
+            recorded_scale,
             new_fallback,
             cx,
         ));
     }
 }
 
+fn cached_rasterized_store(cell: &AtomicU32, scale: f32) {
+    cell.store(scale.to_bits(), Ordering::Relaxed);
+}
+
 impl CachedMermaidDiagram {
+    fn encode_scale(scale: f32) -> AtomicU32 {
+        AtomicU32::new(scale.to_bits())
+    }
+
+    fn decode_scale(bits: u32) -> f32 {
+        f32::from_bits(bits)
+    }
+
+    /// The scale `render_image` was (or will be) rasterized at, in zoom units.
+    fn rasterized(&self) -> f32 {
+        Self::decode_scale(self.rasterized_scale.load(Ordering::Relaxed))
+    }
+
+    fn set_rasterized(&self, scale: f32) {
+        self.rasterized_scale
+            .store(scale.to_bits(), Ordering::Relaxed);
+    }
+
     fn new(
         contents: ParsedMarkdownMermaidDiagramContents,
         zoom: f32,
@@ -224,6 +260,7 @@ impl CachedMermaidDiagram {
     ) -> Self {
         let render_image = Arc::new(OnceLock::<anyhow::Result<Arc<RenderImage>>>::new());
         let parsed_svg = Arc::new(OnceLock::<Arc<ParsedSvg>>::new());
+        let rasterized_scale = Arc::new(Self::encode_scale(zoom));
         let svg_renderer = cx.svg_renderer();
         let mermaid_theme = build_mermaid_theme(cx);
 
@@ -231,6 +268,7 @@ impl CachedMermaidDiagram {
             let render_image = render_image.clone();
             let parsed_svg = parsed_svg.clone();
             let fallback_image = fallback_image.clone();
+            let rasterized_scale = rasterized_scale.clone();
             async move |this, cx| {
                 let value = cx
                     .background_spawn(async move {
@@ -240,15 +278,25 @@ impl CachedMermaidDiagram {
                             .parse_svg(svg_string.as_bytes())
                             .map_err(|error| anyhow::anyhow!("{error}"))?;
                         let tree = Arc::new(tree);
-                        let scale = contents.scale as f32 / 100.0 * zoom;
+                        let fence = contents.scale as f32 / 100.0;
+                        let render_scale = effective_raster_scale(&tree, fence * zoom);
                         let image = svg_renderer
-                            .render_parsed(&tree, scale)
+                            .render_parsed(&tree, render_scale)
                             .map_err(|error| anyhow::anyhow!("{error}"))?;
-                        anyhow::Ok((tree, image))
+                        let recorded_zoom = if fence > 0.0 {
+                            render_scale / fence
+                        } else {
+                            zoom
+                        };
+                        anyhow::Ok((tree, image, recorded_zoom))
                     })
                     .await;
                 let value = match value {
-                    Ok((tree, image)) => {
+                    Ok((tree, image, recorded_zoom)) => {
+                        // Publish the effective scale before the image, so
+                        // any reader that sees the raster also sees its true
+                        // rasterization scale.
+                        cached_rasterized_store(&rasterized_scale, recorded_zoom);
                         parsed_svg.set(tree).ok();
                         Ok(image)
                     }
@@ -263,7 +311,7 @@ impl CachedMermaidDiagram {
             render_image,
             parsed_svg,
             fallback_image,
-            rasterized_scale: zoom,
+            rasterized_scale,
             _task: task,
         }
     }
@@ -300,7 +348,7 @@ impl CachedMermaidDiagram {
             render_image,
             parsed_svg: parsed_svg_cell,
             fallback_image,
-            rasterized_scale,
+            rasterized_scale: Arc::new(Self::encode_scale(rasterized_scale)),
             _task: task,
         }
     }
@@ -348,7 +396,7 @@ impl CachedMermaidDiagram {
             render_image: result,
             parsed_svg: parsed_svg_cell,
             fallback_image: fallback_image.map(|image| (image, 1.0)),
-            rasterized_scale: 1.0,
+            rasterized_scale: Arc::new(Self::encode_scale(1.0)),
             _task: Task::ready(()),
         }
     }
@@ -501,6 +549,24 @@ pub(crate) fn extract_mermaid_diagrams(
 /// have a device scale of [`SMOOTH_SVG_SCALE_FACTOR`]; dividing by it and by
 /// the scale the raster was made at recovers the natural size, regardless of
 /// which raster is currently cached.
+/// The largest rasterization scale worth requesting for `parsed_svg`.
+///
+/// gpui's rasterizer silently clamps any axis beyond 8192 device pixels (see
+/// `rasterize_tree` in gpui), and `render_parsed` additionally multiplies by
+/// the smooth factor. Requesting more than the cap supports would yield a
+/// clamped raster whose recovered natural size is wrong, so callers clamp
+/// here and record the effective scale instead.
+fn effective_raster_scale(parsed_svg: &ParsedSvg, requested: f32) -> f32 {
+    const MAX_TEXTURE_AXIS: f32 = 8192.0;
+    let svg_size = parsed_svg.size();
+    let max_axis = f32::from(svg_size.width).max(f32::from(svg_size.height));
+    if !max_axis.is_finite() || max_axis <= 0.0 {
+        return requested;
+    }
+    let max_scale = MAX_TEXTURE_AXIS / (max_axis * SMOOTH_SVG_SCALE_FACTOR);
+    requested.min(max_scale).max(0.05)
+}
+
 fn mermaid_base_size(image: &RenderImage, rasterized_scale: f32) -> Size<Pixels> {
     let device_size = image.size(0);
     let device_scale = SMOOTH_SVG_SCALE_FACTOR * rasterized_scale;
@@ -587,7 +653,7 @@ pub(crate) fn render_mermaid_diagram(
             let body = if showing_code {
                 render_mermaid_code_view(&parsed.contents.contents)
             } else {
-                let rasterized_scale = cached.map_or(1.0, |cached| cached.rasterized_scale);
+                let rasterized_scale = cached.map_or(1.0, |cached| cached.rasterized());
                 let scroll_handle = markdown.update(cx, |markdown, _| {
                     markdown.mermaid_scroll_handle(source_offset)
                 });
@@ -1049,7 +1115,8 @@ fn render_mermaid_code_view(contents: &SharedString) -> AnyElement {
 mod tests {
     use super::{
         CachedMermaidDiagram, MermaidDiagramCache, MermaidState, ParsedMarkdownMermaidDiagram,
-        ParsedMarkdownMermaidDiagramContents, extract_mermaid_diagrams, parse_mermaid_info,
+        ParsedMarkdownMermaidDiagramContents, effective_raster_scale, extract_mermaid_diagrams,
+        parse_mermaid_info,
     };
     use crate::{
         CodeBlockRenderer, CopyButtonVisibility, MERMAID_ZOOM_DEBOUNCE, Markdown, MarkdownElement,
@@ -1471,7 +1538,7 @@ mod tests {
             cached.render_image.get().is_none(),
             "the new raster should still be pending"
         );
-        assert_eq!(cached.rasterized_scale, 2.0);
+        assert_eq!(cached.rasterized(), 2.0);
         assert_eq!(
             cached
                 .fallback_image
@@ -1554,7 +1621,8 @@ mod tests {
         markdown.read_with(cx, |markdown, _| {
             let cached = markdown.mermaid_state.cache.get(&contents).unwrap();
             assert_eq!(
-                cached.rasterized_scale, 1.0,
+                cached.rasterized(),
+                1.0,
                 "no re-raster before the debounce elapses"
             );
         });
@@ -1568,7 +1636,8 @@ mod tests {
         markdown.read_with(cx, |markdown, _| {
             let cached = markdown.mermaid_state.cache.get(&contents).unwrap();
             assert_eq!(
-                cached.rasterized_scale, 1.0,
+                cached.rasterized(),
+                1.0,
                 "the second zoom change should restart the debounce timer"
             );
         });
@@ -1578,7 +1647,7 @@ mod tests {
         cx.run_until_parked();
         markdown.read_with(cx, |markdown, _| {
             let cached = markdown.mermaid_state.cache.get(&contents).unwrap();
-            assert_eq!(cached.rasterized_scale, 2.0);
+            assert_eq!(cached.rasterized(), 2.0);
             let new_image = cached
                 .render_image
                 .get()
@@ -1635,7 +1704,7 @@ mod tests {
             assert_eq!(markdown.mermaid_zoom_level(0), 0.5);
 
             markdown.set_mermaid_zoom_level(0, 10.0, cx);
-            assert_eq!(markdown.mermaid_zoom_level(0), 2.0);
+            assert_eq!(markdown.mermaid_zoom_level(0), 4.0);
 
             // Values close to 1.0 snap back to the default.
             markdown.set_mermaid_zoom_level(0, 1.04, cx);
@@ -1670,6 +1739,107 @@ mod tests {
                 markdown.mermaid_zoom_level(0),
                 0.5,
                 "zooming out far should clamp to the absolute floor"
+            );
+        });
+    }
+
+    #[gpui::test]
+    fn test_effective_raster_scale_caps_to_texture_limit(cx: &mut TestAppContext) {
+        ensure_theme_initialized(cx);
+        let wide = cx.update(|cx| {
+            cx.svg_renderer()
+                .parse_svg(
+                    br#"<svg xmlns="http://www.w3.org/2000/svg" width="4000" height="100"></svg>"#,
+                )
+                .unwrap()
+        });
+        // 4000 logical px * 2 (smooth) * 2.0 = 16000 device px would exceed
+        // the 8192 texture cap; the request is clamped to exactly the cap.
+        let capped = effective_raster_scale(&wide, 2.0);
+        assert!((capped - 8192.0 / (4000.0 * 2.0)).abs() < 1e-4, "{capped}");
+        assert_eq!(effective_raster_scale(&wide, 1.0), 1.0);
+
+        let small = cx.update(|cx| {
+            cx.svg_renderer()
+                .parse_svg(
+                    br#"<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100"></svg>"#,
+                )
+                .unwrap()
+        });
+        assert_eq!(effective_raster_scale(&small, 2.0), 2.0);
+        assert_eq!(effective_raster_scale(&small, 0.5), 0.5);
+    }
+
+    #[gpui::test]
+    fn test_mermaid_reraster_preserves_natural_size(cx: &mut TestAppContext) {
+        ensure_theme_initialized(cx);
+        let markdown = cx.new(|cx| Markdown::new("".into(), None, None, cx));
+
+        let (parsed_svg, image) = markdown.update(cx, |_, cx| {
+            let renderer = cx.svg_renderer();
+            let parsed_svg = Arc::new(
+                renderer
+                    .parse_svg(
+                        br#"<svg xmlns="http://www.w3.org/2000/svg" width="4000" height="100"></svg>"#,
+                    )
+                    .unwrap(),
+            );
+            let image = renderer.render_parsed(&parsed_svg, 1.0).unwrap();
+            (parsed_svg, image)
+        });
+        let contents = mermaid_contents("graph A");
+        markdown.update(cx, |markdown, _| {
+            markdown.parsed_markdown.mermaid_diagrams.insert(
+                0,
+                ParsedMarkdownMermaidDiagram {
+                    content_range: 0..contents.contents.len(),
+                    contents: contents.clone(),
+                },
+            );
+            markdown.mermaid_state.cache.insert(
+                contents.clone(),
+                Arc::new(CachedMermaidDiagram::new_for_test(
+                    Some(image),
+                    None,
+                    Some(parsed_svg),
+                )),
+            );
+        });
+
+        let natural = markdown.update(cx, |markdown, _| {
+            markdown.mermaid_state.natural_size(&contents).unwrap()
+        });
+        assert_eq!(f32::from(natural.width), 4000.0);
+
+        // Zoom to 200%: the naive request (4000 * 2 * smooth) exceeds the
+        // 8192 texture cap, so the re-raster must clamp its request and
+        // record the effective scale. Before the fix, the silently clamped
+        // raster shrank the recovered natural size and the diagram snapped
+        // back to (roughly) its pre-zoom size while the indicator still read
+        // 200%.
+        markdown.update(cx, |markdown, cx| {
+            markdown.set_mermaid_zoom_level(0, 2.0, cx);
+            // The debounce timer doesn't advance under the test executor;
+            // drive the re-raster directly.
+            markdown.rerasterize_mermaid_diagram(0, cx);
+        });
+        cx.run_until_parked();
+
+        markdown.update(cx, |markdown, _| {
+            let cached = markdown.mermaid_state.cache.get(&contents).unwrap();
+            let effective = cached.rasterized();
+            assert!(
+                (effective - 8192.0 / (4000.0 * 2.0)).abs() < 1e-3,
+                "expected the capped scale, got {effective}"
+            );
+            let natural = markdown
+                .mermaid_state
+                .natural_size(&contents)
+                .expect("raster should have completed");
+            assert!(
+                (f32::from(natural.width) - 4000.0).abs() < 1.0,
+                "natural size must survive the re-raster, got {}",
+                natural.width
             );
         });
     }

@@ -1,5 +1,5 @@
 use crate::{
-    AssetSource, DevicePixels, IsZero, RenderImage, Result, SharedString, Size,
+    AssetSource, DevicePixels, IsZero, Pixels, RenderImage, Result, SharedString, Size, px,
     swap_rgba_pa_to_bgra,
 };
 use image::Frame;
@@ -101,6 +101,16 @@ pub struct SvgRenderer {
 /// to paths, so callers that need to rasterize the same SVG at multiple
 /// scales should retain this value to avoid re-paying the parse cost.
 pub struct ParsedSvg(usvg::Tree);
+
+impl ParsedSvg {
+    /// The SVG's intrinsic size, in logical (user-unit) pixels. Callers can
+    /// use this to clamp rasterization scale requests against texture size
+    /// limits before paying for a render.
+    pub fn size(&self) -> Size<Pixels> {
+        let size = self.0.size();
+        crate::size(px(size.width()), px(size.height()))
+    }
+}
 
 /// The size in which to rasterize the SVG.
 #[derive(Clone, Copy)]

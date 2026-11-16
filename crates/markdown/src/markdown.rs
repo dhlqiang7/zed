@@ -62,7 +62,7 @@ use util::ResultExt;
 
 use crate::parser::CodeBlockKind;
 
-const MERMAID_MAX_ZOOM: f32 = 2.0;
+const MERMAID_MAX_ZOOM: f32 = 4.0;
 /// Absolute zoom floor used while the fit-to-width scale cannot be computed
 /// yet (no raster or no layout), so a pending re-render never snaps the zoom
 /// back up to 1.0.
