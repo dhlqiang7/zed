@@ -89,6 +89,11 @@ banner_text = "Your %{file_type} file uses deprecated settings which can be auto
 backup_and_update = "Backup and Update"
 
 [zed.quick_action_bar]
+preview_markdown = "Preview Markdown"
+preview_svg = "Preview SVG"
+preview_mermaid = "Preview Mermaid"
+preview_tabular_data = "Preview Tabular Data"
+alt_click_split_hint = "%{key} to open in a split"
 buffer_search = "Buffer Search"
 inline_assist = "Inline Assist"
 code_actions = "Code Actions"

@@ -89,6 +89,11 @@ banner_text = "您的%{file_type}文件使用了已弃用的设置，这些设�
 backup_and_update = "备份并更新"
 
 [zed.quick_action_bar]
+preview_markdown = "预览 Markdown"
+preview_svg = "预览 SVG"
+preview_mermaid = "预览 Mermaid 图表"
+preview_tabular_data = "预览表格数据"
+alt_click_split_hint = "按 %{key} 在分栏中打开"
 buffer_search = "缓冲区搜索"
 inline_assist = "行内助手"
 code_actions = "代码操作"

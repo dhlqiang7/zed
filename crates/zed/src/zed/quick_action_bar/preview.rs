@@ -1,15 +1,18 @@
 use editor::{Editor, MultiBuffer};
-use gpui::{AnyElement, Entity, Modifiers};
+use gpui::{AnyElement, Entity, Modifiers, SharedString};
 use markdown_preview::markdown_preview_view::MarkdownPreviewView;
+use mermaid_preview::mermaid_preview_view::MermaidPreviewView;
 use svg_preview::svg_preview_view::SvgPreviewView;
 use tabular_data_preview::TabularDataPreviewPane;
 use ui::{Tooltip, prelude::*, text_for_keystroke};
+use zed_i18n::t;
 
 use super::QuickActionBar;
 
 enum PreviewTarget {
     Markdown(Entity<Editor>),
     Svg(Entity<MultiBuffer>),
+    Mermaid(Entity<MultiBuffer>),
     TabularData(Entity<Editor>),
 }
 
@@ -29,6 +32,10 @@ impl QuickActionBar {
             && SvgPreviewView::is_svg_file(&buffer, cx)
         {
             PreviewTarget::Svg(buffer)
+        } else if let Some(buffer) = active_item.act_as::<MultiBuffer>(cx)
+            && MermaidPreviewView::is_mermaid_file(&buffer, cx)
+        {
+            PreviewTarget::Mermaid(buffer)
         } else if let Some(editor) = editor
             && TabularDataPreviewPane::is_tabular_data_file(&editor, cx)
         {
@@ -37,20 +44,29 @@ impl QuickActionBar {
             return None;
         };
 
-        let (button_id, tooltip_text, open_action_for_tooltip) = match &preview_target {
+        let (button_id, tooltip_text, open_action_for_tooltip): (
+            &str,
+            SharedString,
+            &dyn gpui::Action,
+        ) = match &preview_target {
             PreviewTarget::Markdown(_) => (
                 "toggle-markdown-preview",
-                "Preview Markdown",
+                t!("zed.quick_action_bar.preview_markdown").into(),
                 &markdown_preview::OpenPreview as &dyn gpui::Action,
             ),
             PreviewTarget::Svg(_) => (
                 "toggle-svg-preview",
-                "Preview SVG",
+                t!("zed.quick_action_bar.preview_svg").into(),
                 &svg_preview::OpenPreview as &dyn gpui::Action,
+            ),
+            PreviewTarget::Mermaid(_) => (
+                "toggle-mermaid-preview",
+                t!("zed.quick_action_bar.preview_mermaid").into(),
+                &mermaid_preview::OpenPreview as &dyn gpui::Action,
             ),
             PreviewTarget::TabularData(_) => (
                 "toggle-tabular-preview",
-                "Preview Tabular Data",
+                t!("zed.quick_action_bar.preview_tabular_data").into(),
                 &tabular_data_preview::OpenPreview as &dyn gpui::Action,
             ),
         };
@@ -66,11 +82,11 @@ impl QuickActionBar {
             .style(ButtonStyle::Subtle)
             .tooltip(move |_window, cx| {
                 Tooltip::with_meta(
-                    tooltip_text,
+                    tooltip_text.clone(),
                     Some(open_action_for_tooltip),
-                    format!(
-                        "{} to open in a split",
-                        text_for_keystroke(&alt_click.modifiers, &alt_click.key, cx)
+                    t!(
+                        "zed.quick_action_bar.alt_click_split_hint",
+                        key = text_for_keystroke(&alt_click.modifiers, &alt_click.key, cx)
                     ),
                     cx,
                 )
@@ -108,6 +124,18 @@ impl QuickActionBar {
                                     );
                                 } else {
                                     SvgPreviewView::open_preview_in_pane(
+                                        workspace, buffer, pane, window, cx,
+                                    );
+                                }
+                            }
+                            PreviewTarget::Mermaid(buffer) => {
+                                let buffer = buffer.clone();
+                                if open_to_the_side {
+                                    MermaidPreviewView::open_preview_to_the_side_of_pane(
+                                        workspace, buffer, pane, window, cx,
+                                    );
+                                } else {
+                                    MermaidPreviewView::open_preview_in_pane(
                                         workspace, buffer, pane, window, cx,
                                     );
                                 }

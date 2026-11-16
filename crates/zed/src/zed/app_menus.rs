@@ -1,4 +1,3 @@
-use collab_ui::collab_panel;
 use gpui::{App, Menu, MenuItem, OsAction};
 use project::DisableAiSettings;
 use release_channel::ReleaseChannel;
