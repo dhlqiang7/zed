@@ -63,6 +63,10 @@ use util::ResultExt;
 use crate::parser::CodeBlockKind;
 
 const MERMAID_MAX_ZOOM: f32 = 2.0;
+/// Absolute zoom floor used while the fit-to-width scale cannot be computed
+/// yet (no raster or no layout), so a pending re-render never snaps the zoom
+/// back up to 1.0.
+const MERMAID_MIN_ZOOM_FLOOR: f32 = 0.5;
 /// Zoom levels within this distance of 1.0 snap back to exactly 1.0 so users
 /// can easily return to the default size.
 const MERMAID_ZOOM_SNAP_TOLERANCE: f32 = 0.05;
@@ -837,28 +841,27 @@ impl Markdown {
             .map_or(1.0, |view| view.zoom)
     }
 
-    /// The smallest zoom level for a diagram: the scale that makes it span
-    /// the content width, capped at 1.0 so diagrams that already fit are
-    /// never zoomed out below their natural size. Falls back to 1.0 when the
-    /// diagram has no raster yet or the container hasn't been laid out.
-    fn mermaid_min_zoom_level(&self, source_offset: usize) -> f32 {
-        let Some(diagram) = self.parsed_markdown.mermaid_diagrams.get(&source_offset) else {
-            return 1.0;
-        };
-        let Some(natural_size) = self.mermaid_state.natural_size(&diagram.contents) else {
-            return 1.0;
-        };
-        let Some(container_width) = self
+    /// The fit-to-width zoom for a diagram: the scale that makes it span the
+    /// content width, capped at 1.0 so diagrams that already fit are never
+    /// zoomed out below their natural size. Returns `None` while the diagram
+    /// has no raster yet or the container hasn't been laid out — during those
+    /// windows the caller must keep the last zoom instead of clamping it,
+    /// otherwise a transient re-parse would snap the zoom back to 1.0.
+    fn mermaid_fit_zoom_level(&self, source_offset: usize) -> Option<f32> {
+        let diagram = self
+            .parsed_markdown
+            .mermaid_diagrams
+            .get(&source_offset)
+            .cloned()?;
+        let natural_size = self.mermaid_state.natural_size(&diagram.contents)?;
+        let container_width = self
             .mermaid_views
             .get(&source_offset)
-            .and_then(|view| view.container_width())
-        else {
-            return 1.0;
-        };
+            .and_then(|view| view.container_width())?;
         if natural_size.width <= container_width {
-            return 1.0;
+            return Some(1.0);
         }
-        container_width / natural_size.width
+        Some(container_width / natural_size.width)
     }
 
     pub(crate) fn set_mermaid_zoom_level(
@@ -867,8 +870,12 @@ impl Markdown {
         zoom: f32,
         cx: &mut Context<Self>,
     ) {
-        let min_zoom = self.mermaid_min_zoom_level(source_offset);
         let requested_zoom = zoom;
+        // When the fit scale can't be computed yet, fall back to an absolute
+        // floor so the zoom survives the pending-raster window.
+        let min_zoom = self
+            .mermaid_fit_zoom_level(source_offset)
+            .unwrap_or(MERMAID_MIN_ZOOM_FLOOR);
         let mut zoom = zoom.clamp(min_zoom, MERMAID_MAX_ZOOM);
         if (zoom - 1.0).abs() <= MERMAID_ZOOM_SNAP_TOLERANCE {
             zoom = 1.0;
@@ -898,7 +905,11 @@ impl Markdown {
         if !zoomed_to_fit {
             return zoom;
         }
-        let min_zoom = self.mermaid_min_zoom_level(source_offset);
+        // While the fit scale is unknown, keep the stored zoom rather than
+        // recomputing it against stale geometry.
+        let Some(min_zoom) = self.mermaid_fit_zoom_level(source_offset) else {
+            return zoom;
+        };
         if (min_zoom - zoom).abs() < 0.001 {
             return zoom;
         }
@@ -972,11 +983,12 @@ impl Markdown {
         };
         let scroll_handle = &view.scroll_handle;
         let delta = position - pan.mouse;
-        // `Pixels` is not ordered, so the clamp is done in `f32` space. Offsets
-        // are non-positive; `max_offset().x` is the most negative valid value.
+        // `Pixels` is not ordered, so the clamp is done in `f32` space.
+        // Offsets are non-positive; `max_offset().x` reports the scrollable
+        // extent as a positive magnitude, so the lower bound is its negation.
         let new_x = f32::from(pan.offset.x + delta.x)
             .min(0.0)
-            .max(f32::from(scroll_handle.max_offset().x));
+            .max(-f32::from(scroll_handle.max_offset().x));
         if new_x != f32::from(scroll_handle.offset().x) {
             scroll_handle.set_offset(point(px(new_x), scroll_handle.offset().y));
             cx.notify();

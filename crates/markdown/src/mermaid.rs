@@ -1,7 +1,7 @@
 use collections::HashMap;
 use gpui::{
     Animation, AnimationExt, AnyElement, App, ClipboardItem, Context, CursorStyle, Entity,
-    ImageSource, MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent, ParsedSvg, Pixels,
+    ImageSource, Img, MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent, ParsedSvg, Pixels,
     Point, RenderImage, SMOOTH_SVG_SCALE_FACTOR, ScrollDelta, ScrollEvent, ScrollHandle, Size,
     Stateful, StyledText, Task, Window, img, pulsating_between, size,
 };
@@ -588,22 +588,30 @@ pub(crate) fn render_mermaid_diagram(
                 render_mermaid_code_view(&parsed.contents.contents)
             } else {
                 let rasterized_scale = cached.map_or(1.0, |cached| cached.rasterized_scale);
-                let image_element =
-                    img(ImageSource::Render(render_image.clone())).with_fallback(|| {
-                        Label::new(t!("markdown.mermaid.load_failed")).into_any_element()
-                    });
                 let scroll_handle = markdown.update(cx, |markdown, _| {
                     markdown.mermaid_scroll_handle(source_offset)
                 });
                 let base_size = mermaid_base_size(render_image, rasterized_scale);
                 let display_size = mermaid_display_size(base_size, zoom);
                 let panning = markdown.read(cx).mermaid_is_panning(source_offset);
+                // The pan listeners live on the image itself: the img element
+                // paints its own hitbox above the scroll container's, so a
+                // container-level listener never sees the pointer over the
+                // diagram.
+                let image_element = with_mermaid_pan(
+                    img(ImageSource::Render(render_image.clone())).with_fallback(|| {
+                        Label::new(t!("markdown.mermaid.load_failed")).into_any_element()
+                    }),
+                    markdown.clone(),
+                    source_offset,
+                    &scroll_handle,
+                    panning,
+                );
                 let body = mermaid_scroll_container(
                     markdown.clone(),
                     source_offset,
                     &scroll_handle,
                     on_zoom.clone(),
-                    panning,
                 )
                 .child(image_element.w(display_size.width).h(display_size.height))
                 .into_any_element();
@@ -650,18 +658,23 @@ pub(crate) fn render_mermaid_diagram(
             if let Some((fallback, fallback_scale)) =
                 cached.and_then(|cached| cached.fallback_image.clone())
             {
-                let fallback_element =
-                    img(ImageSource::Render(fallback.clone())).with_fallback(|| {
-                        div()
-                            .child(Label::new(t!("markdown.mermaid.load_failed")))
-                            .into_any_element()
-                    });
                 let scroll_handle = markdown.update(cx, |markdown, _| {
                     markdown.mermaid_scroll_handle(source_offset)
                 });
                 let base_size = mermaid_base_size(&fallback, fallback_scale);
                 let display_size = mermaid_display_size(base_size, zoom);
                 let panning = markdown.read(cx).mermaid_is_panning(source_offset);
+                let fallback_element = with_mermaid_pan(
+                    img(ImageSource::Render(fallback.clone())).with_fallback(|| {
+                        div()
+                            .child(Label::new(t!("markdown.mermaid.load_failed")))
+                            .into_any_element()
+                    }),
+                    markdown.clone(),
+                    source_offset,
+                    &scroll_handle,
+                    panning,
+                );
                 // The fallback is the prior raster shown at the new size while
                 // the sharper one renders; keep it static so swapping rasters
                 // (e.g. on zoom) is seamless rather than flashing.
@@ -670,7 +683,6 @@ pub(crate) fn render_mermaid_diagram(
                     source_offset,
                     &scroll_handle,
                     on_zoom.clone(),
-                    panning,
                 )
                 .child(
                     fallback_element
@@ -747,13 +759,13 @@ fn mermaid_scroll_container(
     source_offset: usize,
     scroll_handle: &ScrollHandle,
     on_zoom: Option<MermaidZoomCallback>,
-    panning: bool,
 ) -> Stateful<Div> {
     let mut container = div()
         .id(ElementId::named_usize(
             "mermaid-diagram-body",
             source_offset,
         ))
+        .debug_selector(move || format!("mermaid-diagram-body-{source_offset}"))
         .w_full()
         .overflow_x_scroll()
         .track_scroll(scroll_handle)
@@ -761,16 +773,7 @@ fn mermaid_scroll_container(
             markdown.clone(),
             source_offset,
             on_zoom,
-        ))
-        .on_mouse_down(
-            MouseButton::Left,
-            on_mermaid_pan_start(markdown.clone(), source_offset, scroll_handle),
-        )
-        .on_mouse_move(on_mermaid_pan_move(markdown.clone(), source_offset))
-        .on_mouse_up(
-            MouseButton::Left,
-            on_mermaid_pan_end(markdown.clone(), source_offset),
-        );
+        ));
     // Without this, gpui maps vertical wheel deltas onto the x axis for
     // x-only scroll containers (see `paint_scroll_listener` in gpui's div),
     // hijacking plain vertical scrolls. Restricting to the actual axis lets
@@ -778,14 +781,37 @@ fn mermaid_scroll_container(
     // ctrl+vertical-scroll (zoom gesture) never moves this container either,
     // since its delta.x is zero.
     container.style().restrict_scroll_to_axis = Some(true);
+    container
+}
+
+/// Attaches the drag-pan interaction to a rendered diagram image. The
+/// listeners must live on the image element itself, because `img` paints its
+/// own hitbox above the scroll container's hitbox; container-level mouse
+/// listeners never see the pointer while it is over the diagram.
+fn with_mermaid_pan(
+    image: Img,
+    markdown: Entity<Markdown>,
+    source_offset: usize,
+    scroll_handle: &ScrollHandle,
+    panning: bool,
+) -> Img {
     // Hand cursors advertise that the diagram can be dragged to pan; the
     // diagram body is otherwise a passive image surface.
-    container.style().mouse_cursor = Some(if panning {
-        CursorStyle::ClosedHand
-    } else {
-        CursorStyle::OpenHand
-    });
-    container
+    image
+        .cursor(if panning {
+            CursorStyle::ClosedHand
+        } else {
+            CursorStyle::OpenHand
+        })
+        .on_mouse_down(
+            MouseButton::Left,
+            on_mermaid_pan_start(markdown.clone(), source_offset, scroll_handle),
+        )
+        .on_mouse_move(on_mermaid_pan_move(markdown.clone(), source_offset))
+        .on_mouse_up(
+            MouseButton::Left,
+            on_mermaid_pan_end(markdown, source_offset),
+        )
 }
 
 /// Begins a drag pan on left-button press, remembering the pointer position
@@ -1031,8 +1057,8 @@ mod tests {
     };
     use collections::HashMap;
     use gpui::{
-        Bounds, Context, Entity, IntoElement, Render, RenderImage, TestAppContext, Window, canvas,
-        point, size,
+        Bounds, Context, Entity, IntoElement, MouseButton, Render, RenderImage, TestAppContext,
+        Window, canvas, point, size,
     };
     use std::cell::RefCell;
     use std::rc::Rc;
@@ -1603,9 +1629,10 @@ mod tests {
 
         markdown.update(cx, |markdown, cx| {
             // With no raster or layout to compute a fit-to-width scale from,
-            // the minimum zoom is 1.0.
+            // zooming out clamps to the absolute floor instead of snapping
+            // up to 1.0 (which would reset the zoom during a re-parse).
             markdown.set_mermaid_zoom_level(0, 0.05, cx);
-            assert_eq!(markdown.mermaid_zoom_level(0), 1.0);
+            assert_eq!(markdown.mermaid_zoom_level(0), 0.5);
 
             markdown.set_mermaid_zoom_level(0, 10.0, cx);
             assert_eq!(markdown.mermaid_zoom_level(0), 2.0);
@@ -1621,6 +1648,144 @@ mod tests {
             markdown.set_mermaid_zoom_level(0, 1.06, cx);
             assert_eq!(markdown.mermaid_zoom_level(0), 1.06);
         });
+    }
+
+    #[gpui::test]
+    fn test_mermaid_zoom_survives_pending_raster(cx: &mut TestAppContext) {
+        let markdown = cx.new(|cx| Markdown::new("".into(), None, None, cx));
+
+        markdown.update(cx, |markdown, cx| {
+            // During the window with no raster and no container layout yet
+            // (for example right after an edit re-parse), zooming out must
+            // keep the requested level instead of snapping up to 1.0.
+            markdown.set_mermaid_zoom_level(0, 0.6, cx);
+            assert_eq!(
+                markdown.mermaid_zoom_level(0),
+                0.6,
+                "zoom should survive while the raster is pending"
+            );
+
+            markdown.set_mermaid_zoom_level(0, 0.05, cx);
+            assert_eq!(
+                markdown.mermaid_zoom_level(0),
+                0.5,
+                "zooming out far should clamp to the absolute floor"
+            );
+        });
+    }
+
+    #[gpui::test]
+    fn test_mermaid_pan_moves_scroll_offset(cx: &mut TestAppContext) {
+        // The markdown element must stay in the window's live frame: a
+        // one-off `draw` frame is replaced on the next re-render, which would
+        // unregister every mouse listener mid-drag.
+        struct PanTestView {
+            markdown: Entity<Markdown>,
+        }
+
+        impl Render for PanTestView {
+            fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+                // Narrow viewport so the rendered diagram overflows and the
+                // scroll container has somewhere to pan.
+                div()
+                    .size_full()
+                    .child(div().w(px(300.)).child(MarkdownElement::new(
+                        self.markdown.clone(),
+                        MarkdownStyle::default(),
+                    )))
+            }
+        }
+
+        ensure_theme_initialized(cx);
+        let markdown = cx.new(|cx| {
+            Markdown::new_with_options(
+                "```mermaid\nflowchart LR\n  A --> B --> C\n```".into(),
+                None,
+                None,
+                MarkdownOptions {
+                    render_mermaid_diagrams: true,
+                    ..Default::default()
+                },
+                cx,
+            )
+        });
+        let markdown_for_view = markdown.clone();
+        let (_, cx) = cx.add_window_view(move |_, _| PanTestView {
+            markdown: markdown_for_view,
+        });
+        cx.run_until_parked();
+
+        // A raster whose natural width (2000px) overflows the drawn width, so
+        // the scroll container actually has somewhere to pan.
+        let image = markdown.update(cx, |_, cx| {
+            let renderer = cx.svg_renderer();
+            renderer
+                .render_single_frame(
+                    br#"<svg xmlns="http://www.w3.org/2000/svg" width="4000" height="100"></svg>"#,
+                    1.0,
+                )
+                .unwrap()
+        });
+        markdown.update(cx, |markdown, _| {
+            let contents = markdown
+                .parsed_markdown
+                .mermaid_diagrams
+                .values()
+                .next()
+                .unwrap()
+                .contents
+                .clone();
+            markdown.mermaid_state.cache.insert(
+                contents,
+                Arc::new(CachedMermaidDiagram::new_for_test(Some(image), None, None)),
+            );
+        });
+        cx.run_until_parked();
+
+        let bounds = cx
+            .debug_bounds("mermaid-diagram-body-0")
+            .expect("diagram body should have debug bounds");
+        let max_offset = markdown.update(cx, |markdown, _| {
+            markdown
+                .mermaid_views
+                .get(&0)
+                .unwrap()
+                .scroll_handle
+                .max_offset()
+        });
+        assert!(
+            max_offset.x > px(0.),
+            "the wide diagram should overflow the container, max_offset {:?}, bounds {:?}",
+            max_offset,
+            bounds
+        );
+
+        let start = bounds.center();
+        cx.simulate_mouse_down(start, MouseButton::Left, gpui::Modifiers::default());
+        cx.simulate_mouse_move(
+            start - point(px(80.), px(0.)),
+            Some(MouseButton::Left),
+            gpui::Modifiers::default(),
+        );
+        cx.simulate_mouse_up(
+            start - point(px(80.), px(0.)),
+            MouseButton::Left,
+            gpui::Modifiers::default(),
+        );
+
+        let offset = markdown.update(cx, |markdown, _| {
+            markdown
+                .mermaid_views
+                .get(&0)
+                .unwrap()
+                .scroll_handle
+                .offset()
+        });
+        assert!(
+            offset.x < px(0.),
+            "dragging left should pan the diagram, got offset {:?}",
+            offset
+        );
     }
 
     #[gpui::test]
